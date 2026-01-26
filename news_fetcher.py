@@ -101,10 +101,17 @@ class NewsFetcher:
         unique_articles = self._deduplicate(articles)
         
         # Sort by date (newest first)
-        unique_articles.sort(
-            key=lambda x: x.published_at or datetime.min, 
-            reverse=True
-        )
+        # Handle mix of timezone-aware and naive datetimes
+        def sort_key(article):
+            if article.published_at is None:
+                return datetime.min
+            # Convert to naive UTC for comparison
+            dt = article.published_at
+            if dt.tzinfo is not None:
+                dt = dt.replace(tzinfo=None)
+            return dt
+        
+        unique_articles.sort(key=sort_key, reverse=True)
         
         return unique_articles[:limit]
     

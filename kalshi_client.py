@@ -89,36 +89,117 @@ class KalshiClient:
         return headers
     
     def search_markets(self, query: str, limit: int = 10) -> list[Market]:
-        """Search for markets by keyword"""
+        """Search for markets by keyword - searches both events and markets"""
+        markets = []
+        
+        # First, search events for better results
+        try:
+            events = self._search_events(query, limit=20)
+            for event in events:
+                event_markets = self._get_markets_for_event(event["event_ticker"])
+                markets.extend(event_markets[:3])  # Get top 3 markets per event
+                
+                if len(markets) >= limit:
+                    break
+        except Exception as e:
+            print(f"Event search error: {e}")
+        
+        # If we didn't find enough via events, search markets directly
+        if len(markets) < limit:
+            try:
+                response = self.client.get(
+                    f"{self.base_url}/markets",
+                    params={"limit": 200},
+                    headers=self._get_headers()
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    for m in data.get("markets", []):
+                        title = m.get("title", "").lower()
+                        subtitle = m.get("subtitle", "").lower()
+                        event_ticker = m.get("event_ticker", "").lower()
+                        
+                        if query.lower() in title or query.lower() in subtitle or query.lower() in event_ticker:
+                            market = self._parse_market(m)
+                            # Avoid duplicates
+                            if not any(existing.ticker == market.ticker for existing in markets):
+                                markets.append(market)
+                                
+            except Exception as e:
+                print(f"Market search error: {e}")
+        
+        return markets[:limit]
+    
+    def _search_events(self, query: str, limit: int = 20) -> list[dict]:
+        """Search for events by keyword"""
         try:
             response = self.client.get(
-                f"{self.base_url}/markets",
-                params={
-                    "status": "active",
-                    "limit": limit,
-                },
+                f"{self.base_url}/events",
+                params={"limit": 200},
                 headers=self._get_headers()
             )
             
             if response.status_code != 200:
-                print(f"API Error: {response.status_code} - {response.text}")
                 return []
             
             data = response.json()
-            markets = []
+            matching = []
+            query_lower = query.lower()
             
-            for m in data.get("markets", []):
-                # Filter by query in title or subtitle
-                title = m.get("title", "").lower()
-                subtitle = m.get("subtitle", "").lower()
+            # Common aliases for search terms
+            aliases = {
+                "bitcoin": ["btc", "bitcoin"],
+                "btc": ["btc", "bitcoin"],
+                "ethereum": ["eth", "ethereum"],
+                "eth": ["eth", "ethereum"],
+                "federal reserve": ["fed", "federal reserve"],
+                "fed": ["fed", "federal reserve"],
+                "president": ["pres", "president", "potus"],
+                "election": ["elect", "election", "vote"],
+            }
+            
+            search_terms = [query_lower]
+            if query_lower in aliases:
+                search_terms = aliases[query_lower]
+            
+            for event in data.get("events", []):
+                title = event.get("title", "").lower()
+                ticker = event.get("event_ticker", "").lower()
+                category = event.get("category", "").lower()
                 
-                if query.lower() in title or query.lower() in subtitle:
-                    markets.append(self._parse_market(m))
+                # Check if any search term matches
+                for term in search_terms:
+                    if term in title or term in ticker or term in category:
+                        matching.append(event)
+                        break
+                    
+                if len(matching) >= limit:
+                    break
             
-            return markets[:limit]
+            return matching
             
         except Exception as e:
-            print(f"Error searching markets: {e}")
+            print(f"Error searching events: {e}")
+            return []
+    
+    def _get_markets_for_event(self, event_ticker: str) -> list[Market]:
+        """Get all markets for a specific event"""
+        try:
+            response = self.client.get(
+                f"{self.base_url}/markets",
+                params={"event_ticker": event_ticker, "limit": 50},
+                headers=self._get_headers()
+            )
+            
+            if response.status_code != 200:
+                return []
+            
+            data = response.json()
+            return [self._parse_market(m) for m in data.get("markets", [])]
+            
+        except Exception as e:
+            print(f"Error getting markets for event {event_ticker}: {e}")
             return []
     
     def get_market(self, ticker: str) -> Optional[Market]:
@@ -213,18 +294,71 @@ class KalshiClient:
     
     def list_active_markets(self, category: Optional[str] = None, limit: int = 20) -> list[Market]:
         """List active markets, optionally filtered by category"""
+        markets = []
+        
+        # Get events first for more interesting listings
         try:
-            params = {
-                "status": "active",
-                "limit": limit,
-            }
-            
-            if category:
-                params["series_ticker"] = category
-            
             response = self.client.get(
-                f"{self.base_url}/markets",
-                params=params,
+                f"{self.base_url}/events",
+                params={"limit": 50},
+                headers=self._get_headers()
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                for event in data.get("events", []):
+                    # Filter by category if specified
+                    if category:
+                        event_cat = event.get("category", "").lower()
+                        event_ticker = event.get("event_ticker", "").lower()
+                        if category.lower() not in event_cat and category.lower() not in event_ticker:
+                            continue
+                    
+                    # Get markets for this event
+                    event_markets = self._get_markets_for_event(event["event_ticker"])
+                    if event_markets:
+                        # Add the first (main) market from each event
+                        markets.append(event_markets[0])
+                    
+                    if len(markets) >= limit:
+                        break
+                        
+        except Exception as e:
+            print(f"Error listing events: {e}")
+        
+        # Fallback to direct market listing if needed
+        if len(markets) < limit:
+            try:
+                params = {"limit": min(limit * 2, 200)}
+                if category:
+                    params["series_ticker"] = category
+                
+                response = self.client.get(
+                    f"{self.base_url}/markets",
+                    params=params,
+                    headers=self._get_headers()
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    for m in data.get("markets", []):
+                        market = self._parse_market(m)
+                        if not any(existing.ticker == market.ticker for existing in markets):
+                            markets.append(market)
+                            if len(markets) >= limit:
+                                break
+                                
+            except Exception as e:
+                print(f"Error listing markets: {e}")
+        
+        return markets[:limit]
+    
+    def list_events(self, limit: int = 20) -> list[dict]:
+        """List available events/categories"""
+        try:
+            response = self.client.get(
+                f"{self.base_url}/events",
+                params={"limit": limit},
                 headers=self._get_headers()
             )
             
@@ -232,10 +366,18 @@ class KalshiClient:
                 return []
             
             data = response.json()
-            return [self._parse_market(m) for m in data.get("markets", [])]
+            return [
+                {
+                    "ticker": e.get("event_ticker"),
+                    "title": e.get("title"),
+                    "category": e.get("category"),
+                    "market_count": e.get("mutually_exclusive", False),
+                }
+                for e in data.get("events", [])
+            ]
             
         except Exception as e:
-            print(f"Error listing markets: {e}")
+            print(f"Error listing events: {e}")
             return []
     
     def _parse_market(self, data: dict) -> Market:
@@ -247,24 +389,31 @@ class KalshiClient:
             except (ValueError, AttributeError):
                 pass
         
-        # Get yes price - handle different API response formats
-        yes_price = data.get("yes_price", 0)
-        if yes_price == 0:
-            yes_price = data.get("last_price", 50)
+        # Get yes price - Kalshi returns price in cents (0-100)
+        # last_price is in cents, last_price_dollars is in dollars
+        yes_price = data.get("last_price", 0)
+        if yes_price == 0 and data.get("last_price_dollars"):
+            try:
+                yes_price = float(data["last_price_dollars"]) * 100
+            except (ValueError, TypeError):
+                yes_price = 50  # Default to 50 if unknown
+        
+        # Ensure yes_price is reasonable (0-100)
+        yes_price = max(1, min(99, yes_price)) if yes_price > 0 else 50
         
         return Market(
             ticker=data.get("ticker", ""),
-            title=data.get("title", ""),
+            title=data.get("title", data.get("event_ticker", "")),
             subtitle=data.get("subtitle", ""),
-            category=data.get("category", ""),
-            status=data.get("status", "unknown"),
+            category=data.get("category", data.get("event_ticker", "").split("-")[0] if data.get("event_ticker") else ""),
+            status="active" if not data.get("result") else "settled",
             yes_price=yes_price,
             no_price=100 - yes_price,
             volume=data.get("volume", 0),
             volume_24h=data.get("volume_24h", 0),
             open_interest=data.get("open_interest", 0),
-            yes_ask=data.get("yes_ask", yes_price + 1),
-            yes_bid=data.get("yes_bid", yes_price - 1),
+            yes_ask=data.get("yes_ask", yes_price + 2),
+            yes_bid=data.get("yes_bid", max(1, yes_price - 2)),
             close_time=close_time,
             result=data.get("result"),
         )
