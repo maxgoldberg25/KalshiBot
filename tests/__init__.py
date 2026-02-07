@@ -1,1 +1,1 @@
-"""Test suite for Kalshi Bot."""
+# Empty test init

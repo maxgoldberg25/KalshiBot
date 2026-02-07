@@ -1,0 +1,35 @@
+#!/bin/sh
+# Block commits that might contain API keys or secrets.
+# Install: cp scripts/pre-commit.no-keys .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+set -e
+
+FORBIDDEN_NAMES='\.env$|kalshi\.key$|\.key$|\.pem$|credentials|\.secret$'
+STAGED=$(git diff --cached --name-only) || true
+
+for f in $STAGED; do
+  case "$f" in
+    *.example|*.sample|\.env\.example) continue ;;
+  esac
+  if echo "$f" | grep -qE "$FORBIDDEN_NAMES"; then
+    echo "pre-commit: Refusing to commit file that may contain secrets: $f"
+    echo "Remove it from the commit and ensure it is in .gitignore."
+    exit 1
+  fi
+done
+
+for f in $STAGED; do
+  case "$f" in
+    .env) ;;
+    .env.*) [ "$f" = ".env.example" ] && continue ;;
+    *) continue ;;
+  esac
+  BLOB=$(git show ":/$f" 2>/dev/null) || true
+  if [ -z "$BLOB" ]; then continue; fi
+  if echo "$BLOB" | grep -qE 'KALSHI_ODDS_(KALSHI_API_KEY_ID|ODDS_API_KEY)=[0-9a-f-]{20,}'; then
+    echo "pre-commit: Possible API key in $f. Do not commit .env; use .env.example with placeholders."
+    exit 1
+  fi
+done
+
+exit 0

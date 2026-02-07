@@ -1,0 +1,40 @@
+# ───────────────────────────────────────────────────────────
+# Market Mappings – Pairs Kalshi contracts with sportsbook selections
+#
+# This file maps the same real-world event across Kalshi and sportsbooks.
+#
+# How to find IDs:
+#
+#   Kalshi:
+#     - Use `kalshi-odds sync-kalshi` to list contracts
+#     - Contract ID is the ticker (e.g., "SUPERBOWL-KC-YES")
+#
+#   The Odds API:
+#     - Use `kalshi-odds sync-odds --sport americanfootball_nfl` to list events
+#     - event_id is returned by the API
+#     - selection is the team/player name
+#
+# ───────────────────────────────────────────────────────────
+
+markets:
+  # Example: Super Bowl winner
+  - market_key: "superbowl_2026_chiefs"
+    kalshi:
+      contract_id: "SUPERBOWL-KC-YES"
+      side: "YES"
+    odds:
+      event_id: "abc123def456"  # From The Odds API
+      market_type: "h2h"
+      selection: "Kansas City Chiefs"
+
+  # Example: NFL game
+  - market_key: "nfl_chiefs_eagles_2026_02_09"
+    kalshi:
+      contract_id: "NFL-KC-WIN-02-09"
+      side: "YES"
+    odds:
+      event_id: "xyz789"
+      market_type: "h2h"
+      selection: "Kansas City Chiefs"
+
+  # Add more mappings below...

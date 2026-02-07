@@ -1,75 +1,40 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
+dist/
+build/
 *.egg
 
-# Virtual environments
+# Virtual environment
 venv/
-ENV/
-env/
 .venv/
 
 # IDE
-.idea/
 .vscode/
-*.swp
-*.swo
-*~
+.idea/
+.cursor/
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-.nox/
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Environments
+# Environment & secrets (never commit keys)
 .env
+.env.*
+!.env.example
 .env.local
 .env.*.local
+kalshi.key
+*.key
+*.pem
+*credentials*
+*secret*
+*.secret
 
-# Database
+# Data
 *.db
 *.sqlite
-*.sqlite3
-
-# Logs
+*.jsonl
 *.log
-logs/
-
-# Secrets - NEVER COMMIT THESE
-*.pem
-*.key
-secrets.json
-credentials.json
+.last_opportunities.json
 
 # OS
 .DS_Store
 Thumbs.db
-
-# Project specific
-kalshi_bot.db
-snapshots/
-reports/
