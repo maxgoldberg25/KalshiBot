@@ -28,19 +28,40 @@ from kalshi_odds.models.probability import NormalizedProb, VigMethod
 
 
 def _game_label_from_market_key(market_key: str) -> str:
-    """Derive a readable game label from market_key e.g. nba_20260207_rockets_thunder_okc -> Thunder vs Rockets."""
+    """Derive a readable game label from market_key.
+
+    Market key format: {sport}_{date}_{gamecode}_{sidecode}
+    e.g. nba_20260408_dalphx_phx          -> "DAL vs PHX"
+         mlb_20260408_2210texlad_tex       -> "TEX vs LAD"  (strips 4-digit time prefix)
+    """
     parts = market_key.split("_")
-    # Drop sport prefix and date (digits)
-    rest = [p for p in parts if not re.match(r"^\d+$", p) and p not in ("nba", "nfl", "superbowl")]
+    # Filter out sport prefix and all-digit date segments
+    rest = [p for p in parts
+            if not re.match(r"^\d+$", p)
+            and p not in ("nba", "nfl", "mlb", "ncaab", "superbowl", "game")]
     if not rest:
-        return market_key.replace("_", " ").title()
-    # Last part is often the side (okc, hou, sea, ne); rest are team names
+        return market_key.replace("_", " ").upper()
+
     if len(rest) >= 2:
-        # e.g. rockets_thunder_okc -> Thunder vs Rockets
-        team_parts = [p for p in rest if len(p) >= 2 and len(p) <= 6][:2]
-        if len(team_parts) >= 2:
-            return " vs ".join(t.title() for t in sorted(team_parts))
-    return " vs ".join(p.title() for p in rest[:2]) if len(rest) >= 2 else rest[0].title()
+        game_code = rest[-2]
+        side_code = rest[-1]
+        gc = re.sub(r"^\d{3,4}", "", game_code.upper())  # strip MLB time prefix e.g. "2210"
+        sc = side_code.upper()
+
+        if gc.startswith(sc) and len(gc) > len(sc):
+            team_a, team_b = sc, gc[len(sc):]
+        elif gc.endswith(sc) and len(gc) > len(sc):
+            team_a, team_b = gc[: len(gc) - len(sc)], sc
+        elif len(gc) == 6:
+            team_a, team_b = gc[:3], gc[3:]
+        elif len(gc) == 4:
+            team_a, team_b = gc[:2], gc[2:]
+        else:
+            team_a, team_b = sc, gc.replace(sc, "").strip() or gc
+
+        return f"{team_a} vs {team_b}"
+
+    return rest[0].upper()
 
 
 def _kalshi_url_from_ticker(ticker: str) -> str:
@@ -148,6 +169,9 @@ def aggregate_opportunities(alerts: list[Alert]) -> list[Opportunity]:
         game_label = _game_label_from_market_key(market_key)
         kalshi_url = _kalshi_url_from_ticker(kalshi_ticker)
 
+        is_estimated = any("[ESTIMATED]" in (a.notes or "") for a in group)
+        odds_source = group[0].raw_snapshot_refs.get("odds_source", "") if group else ""
+
         opportunities.append(
             Opportunity(
                 market_key=market_key,
@@ -172,6 +196,8 @@ def aggregate_opportunities(alerts: list[Alert]) -> list[Opportunity]:
                 rank_score=rank_score,
                 raw_alert_count=len(group),
                 kalshi_url=kalshi_url,
+                is_estimated=is_estimated,
+                odds_source=odds_source,
             )
         )
 
@@ -408,6 +434,7 @@ class Scanner:
                 "kalshi": kalshi_tob.model_dump(),
                 "odds": quote.model_dump(),
                 "normalized": normalized.model_dump(),
+                "odds_source": quote.source,
             },
             kalshi_data_age_seconds=kalshi_age,
             sportsbook_data_age_seconds=odds_age,

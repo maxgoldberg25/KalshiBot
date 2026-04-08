@@ -1,354 +1,889 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kalshi Odds Scanner</title>
-  <style>
-    :root {
-      --bg: #0f1419;
-      --surface: #1a2332;
-      --border: #2d3a4d;
-      --text: #e7ecf3;
-      --muted: #8b9cb3;
-      --accent: #3d8bfd;
-      --green: #3ecf8e;
-      --yellow: #e6c547;
-      --red: #f07178;
-    }
-    * { box-sizing: border-box; }
-    body {
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      margin: 0;
-      line-height: 1.5;
-      min-height: 100vh;
-    }
-    header {
-      padding: 1.25rem 1.5rem;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-    }
-    header h1 { margin: 0; font-size: 1.25rem; font-weight: 600; }
-    header p { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.875rem; }
-    main { padding: 1.25rem 1.5rem 2rem; max-width: 1400px; margin: 0 auto; }
-    .grid {
-      display: grid;
-      gap: 1rem;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      margin-bottom: 1.25rem;
-    }
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1rem 1.1rem;
-    }
-    .card h2 {
-      margin: 0 0 0.75rem;
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      font-weight: 600;
-    }
-    .stat { font-size: 1.5rem; font-weight: 700; }
-    .stat small { font-size: 0.85rem; font-weight: 400; color: var(--muted); }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.8125rem;
-    }
-    th, td {
-      text-align: left;
-      padding: 0.5rem 0.6rem;
-      border-bottom: 1px solid var(--border);
-    }
-    th { color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
-    tr:hover td { background: rgba(255,255,255,0.03); }
-    .edge-high { color: var(--green); font-weight: 600; }
-    .edge-med { color: var(--yellow); }
-    .edge-low { color: var(--muted); }
-    .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-top: 0.75rem; }
-    button {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      padding: 0.45rem 0.9rem;
-      border-radius: 6px;
-      font-size: 0.8125rem;
-      cursor: pointer;
-      font-weight: 500;
-    }
-    button:hover { filter: brightness(1.08); }
-    button.secondary { background: var(--border); color: var(--text); }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .error { color: var(--red); font-size: 0.875rem; margin-top: 0.5rem; }
-    .banner {
-      background: rgba(61, 139, 253, 0.12);
-      border: 1px solid rgba(61, 139, 253, 0.35);
-      color: var(--text);
-      padding: 0.65rem 1rem;
-      border-radius: 8px;
-      margin-bottom: 1rem;
-      font-size: 0.875rem;
-    }
-    input[type="number"] {
-      width: 5rem;
-      padding: 0.35rem 0.5rem;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      color: var(--text);
-    }
-    footer { margin-top: 2rem; font-size: 0.75rem; color: var(--muted); }
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>KalshiBot — Odds Scanner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta21/dist/css/tabler.min.css"/>
+<style>
+:root{
+  --kb-bg:#080d14;
+  --kb-surface:#0d1520;
+  --kb-surface2:#111e2d;
+  --kb-surface3:#162437;
+  --kb-border:#1a2a3d;
+  --kb-border2:#213547;
+  --kb-text:#dce9f5;
+  --kb-muted:#607d96;
+  --kb-dim:#3d5166;
+  --kb-accent:#3b82f6;
+  --kb-accent2:#60a5fa;
+  --kb-green:#10b981;
+  --kb-green2:#34d399;
+  --kb-yellow:#f59e0b;
+  --kb-red:#ef4444;
+  --kb-orange:#f97316;
+  --kb-amber:#f59e0b;
+  --kb-purple:#8b5cf6;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--kb-bg);color:var(--kb-text);min-height:100vh;font-size:14px;line-height:1.6;overflow-x:hidden}
+
+/* Override Tabler dark theme bg */
+.navbar{background:rgba(8,13,20,.88)!important;backdrop-filter:blur(20px) saturate(1.6);-webkit-backdrop-filter:blur(20px) saturate(1.6);border-bottom:1px solid var(--kb-border)!important;padding:.55rem 1.25rem}
+.navbar-brand{font-weight:800;font-size:1rem;letter-spacing:-.01em;color:var(--kb-text)!important;display:flex;align-items:center;gap:.5rem}
+.brand-icon{width:26px;height:26px;background:linear-gradient(135deg,var(--kb-accent),var(--kb-green));border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand-icon svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2.5}
+.brand-name{background:linear-gradient(135deg,var(--kb-accent2),var(--kb-green2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+.nav-link{font-size:.8rem;font-weight:600;color:var(--kb-muted)!important;padding:.4rem .8rem!important;border-radius:6px;transition:all .15s;letter-spacing:.01em}
+.nav-link:hover{color:var(--kb-text)!important;background:rgba(59,130,246,.08)!important}
+.nav-link.active{color:var(--kb-accent)!important;background:rgba(59,130,246,.1)!important}
+
+.navbar-end{display:flex;align-items:center;gap:.75rem;margin-left:auto}
+.status-pill{display:flex;align-items:center;gap:.45rem;background:var(--kb-surface2);border:1px solid var(--kb-border);border-radius:20px;padding:.25rem .7rem;font-size:.72rem;font-weight:600;color:var(--kb-muted)}
+.pulse{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:all .3s}
+.pulse.ok{background:var(--kb-green);box-shadow:0 0 0 3px rgba(16,185,129,.18);animation:glow 2.5s ease infinite}
+.pulse.warn{background:var(--kb-yellow);box-shadow:0 0 0 3px rgba(245,158,11,.18)}
+.pulse.err{background:var(--kb-red);box-shadow:0 0 0 3px rgba(239,68,68,.18)}
+.pulse.off{background:var(--kb-dim)}
+@keyframes glow{0%,100%{box-shadow:0 0 0 3px rgba(16,185,129,.18)}50%{box-shadow:0 0 0 6px rgba(16,185,129,.08)}}
+
+/* Cards */
+.kb-card{background:var(--kb-surface);border:1px solid var(--kb-border);border-radius:12px;overflow:hidden;transition:border-color .2s,box-shadow .2s}
+.kb-card:hover{border-color:var(--kb-border2);box-shadow:0 4px 24px rgba(0,0,0,.2)}
+.kb-card-header{padding:.65rem 1rem;display:flex;align-items:center;gap:.5rem;border-bottom:1px solid var(--kb-border)}
+.kb-card-header h3{font-size:.65rem;text-transform:uppercase;letter-spacing:.07em;color:var(--kb-muted);font-weight:700;margin:0}
+.kb-card-header .ms-auto{margin-left:auto!important}
+.kb-card-body{padding:1rem}
+.kb-card-body.p-0{padding:0}
+
+/* Stat cards */
+.stat-card{padding:.9rem 1rem;display:flex;align-items:center;gap:.85rem}
+.stat-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.stat-icon svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.si-blue{background:rgba(59,130,246,.1);color:var(--kb-accent)}
+.si-green{background:rgba(16,185,129,.1);color:var(--kb-green)}
+.si-yellow{background:rgba(245,158,11,.1);color:var(--kb-yellow)}
+.si-purple{background:rgba(139,92,246,.1);color:var(--kb-purple)}
+.si-red{background:rgba(239,68,68,.1);color:var(--kb-red)}
+.stat-content{flex:1;min-width:0}
+.stat-label{font-size:.62rem;text-transform:uppercase;letter-spacing:.07em;color:var(--kb-muted);font-weight:700;margin-bottom:2px}
+.stat-val{font-size:1.3rem;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--kb-text)}
+.stat-val small{font-size:.68rem;font-weight:400;color:var(--kb-muted)}
+.stat-sub{font-size:.67rem;color:var(--kb-muted);margin-top:2px}
+
+/* Buttons */
+.kb-btn{display:inline-flex;align-items:center;justify-content:center;gap:.35rem;padding:.45rem 1rem;border-radius:8px;font-size:.78rem;font-weight:600;border:none;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap;letter-spacing:.01em}
+.kb-btn-primary{background:var(--kb-accent);color:#fff;box-shadow:0 2px 8px rgba(59,130,246,.3)}
+.kb-btn-primary:hover{background:var(--kb-accent2);box-shadow:0 4px 16px rgba(59,130,246,.35);transform:translateY(-1px)}
+.kb-btn-ghost{background:var(--kb-surface2);color:var(--kb-text);border:1px solid var(--kb-border)}
+.kb-btn-ghost:hover{border-color:var(--kb-border2);background:var(--kb-surface3)}
+.kb-btn-success{background:var(--kb-green);color:#000;box-shadow:0 2px 8px rgba(16,185,129,.25)}
+.kb-btn-success:hover{background:var(--kb-green2);transform:translateY(-1px)}
+.kb-btn-sm{padding:.3rem .7rem;font-size:.72rem}
+.kb-btn:active{transform:translateY(0)!important}
+.kb-btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none}
+.spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;display:none;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Badges */
+.kb-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.kb-badge-blue{background:rgba(59,130,246,.1);color:var(--kb-accent2);border:1px solid rgba(59,130,246,.2)}
+.kb-badge-green{background:rgba(16,185,129,.1);color:var(--kb-green2);border:1px solid rgba(16,185,129,.2)}
+.kb-badge-yellow{background:rgba(245,158,11,.1);color:var(--kb-yellow);border:1px solid rgba(245,158,11,.2)}
+.kb-badge-red{background:rgba(239,68,68,.1);color:var(--kb-red);border:1px solid rgba(239,68,68,.2)}
+.kb-badge-dim{background:rgba(96,125,150,.08);color:var(--kb-muted);border:1px solid rgba(96,125,150,.15)}
+.kb-badge-amber{background:rgba(245,158,11,.12);color:var(--kb-amber);border:1px solid rgba(245,158,11,.22)}
+.kb-badge-purple{background:rgba(139,92,246,.1);color:#a78bfa;border:1px solid rgba(139,92,246,.2)}
+
+/* Tables */
+.kb-table{width:100%;border-collapse:collapse;font-size:.78rem}
+.kb-table th{font-size:.62rem;text-transform:uppercase;letter-spacing:.06em;color:var(--kb-muted);font-weight:700;padding:.55rem .75rem;text-align:left;border-bottom:1px solid var(--kb-border);cursor:pointer;user-select:none;white-space:nowrap;position:sticky;top:0;background:var(--kb-surface);z-index:1}
+.kb-table th:hover{color:var(--kb-text)}
+.kb-table td{padding:.5rem .75rem;border-bottom:1px solid rgba(26,42,61,.5);vertical-align:middle;color:var(--kb-text)}
+.kb-table tr:hover td{background:rgba(59,130,246,.03)}
+.kb-table tr:last-child td{border-bottom:none}
+.sort-arrow{font-size:.55rem;margin-left:3px;opacity:.2}
+.sorted .sort-arrow{opacity:1;color:var(--kb-accent)}
+.mono{font-family:'JetBrains Mono',monospace;font-size:.75rem}
+
+/* Edge cells */
+.edge-cell{position:relative;padding-left:.75rem!important;font-weight:700;font-variant-numeric:tabular-nums}
+.edge-fill{position:absolute;left:0;top:0;bottom:0;border-radius:0 3px 3px 0;opacity:.1;pointer-events:none}
+.edge-fill.hi{background:var(--kb-green)}.edge-fill.md{background:var(--kb-yellow)}.edge-fill.lo{background:var(--kb-muted)}
+.edge-text.hi{color:var(--kb-green2)}.edge-text.md{color:var(--kb-yellow)}.edge-text.lo{color:var(--kb-muted)}
+
+/* Layout */
+.page-wrap{max-width:1480px;margin:0 auto;padding:1.25rem 1.5rem 3rem}
+@media(max-width:768px){.page-wrap{padding:1rem .75rem 2rem}}
+.page{display:none;animation:fadeUp .25s ease}.page.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.row-gap{display:grid;gap:.75rem}
+.cols-2{grid-template-columns:1fr 1fr}
+.cols-3{grid-template-columns:repeat(3,1fr)}
+.cols-4{grid-template-columns:repeat(4,1fr)}
+.cols-5{grid-template-columns:repeat(5,1fr)}
+@media(max-width:1100px){.cols-5{grid-template-columns:repeat(3,1fr)}.cols-4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:860px){.cols-2,.cols-3,.cols-4,.cols-5{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.cols-2,.cols-3,.cols-4,.cols-5{grid-template-columns:1fr}}
+
+/* Health indicators */
+.health-row{display:flex;align-items:center;gap:.85rem;padding:.85rem 1rem;transition:background .15s}
+.health-row+.health-row{border-top:1px solid var(--kb-border)}
+.health-row:hover{background:rgba(59,130,246,.03)}
+.health-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;transition:all .3s}
+.health-dot.ok{background:var(--kb-green);box-shadow:0 0 0 3px rgba(16,185,129,.15)}
+.health-dot.warn{background:var(--kb-yellow);box-shadow:0 0 0 3px rgba(245,158,11,.15)}
+.health-dot.err{background:var(--kb-red);box-shadow:0 0 0 3px rgba(239,68,68,.15)}
+.health-dot.off{background:var(--kb-dim)}
+.health-info{flex:1;min-width:0}
+.health-name{font-size:.83rem;font-weight:600;color:var(--kb-text)}
+.health-desc{font-size:.68rem;color:var(--kb-muted);margin-top:1px}
+
+/* Hero */
+.hero{padding:2.5rem 1rem 1.75rem;text-align:center;background:radial-gradient(ellipse at 50% -20%,rgba(59,130,246,.07) 0%,transparent 65%);border-bottom:1px solid var(--kb-border)}
+.hero h1{font-size:1.9rem;font-weight:800;margin-bottom:.4rem;letter-spacing:-.02em;background:linear-gradient(135deg,var(--kb-text) 30%,var(--kb-accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{color:var(--kb-muted);font-size:.88rem;max-width:500px;margin:0 auto .3rem;line-height:1.6}
+.hero-actions{display:flex;gap:.6rem;justify-content:center;margin-top:1.4rem;flex-wrap:wrap}
+.qstat{text-align:center;padding:1.1rem .5rem;position:relative}
+.qstat+.qstat::before{content:"";position:absolute;left:0;top:20%;height:60%;width:1px;background:var(--kb-border)}
+.qstat-val{font-size:1.65rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.qstat-label{font-size:.6rem;text-transform:uppercase;letter-spacing:.07em;color:var(--kb-muted);font-weight:700;margin-top:4px}
+
+/* Log */
+.log-list{list-style:none;padding:.3rem 0;max-height:240px;overflow-y:auto;font-size:.74rem}
+.log-item{display:flex;align-items:flex-start;gap:.5rem;padding:.4rem 1rem;transition:background .1s}
+.log-item:hover{background:rgba(59,130,246,.03)}
+.log-item+.log-item{border-top:1px solid rgba(26,42,61,.6)}
+.log-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.log-dot.ok{background:var(--kb-green)}.log-dot.err{background:var(--kb-red)}.log-dot.info{background:var(--kb-accent)}.log-dot.warn{background:var(--kb-yellow)}
+.log-time{color:var(--kb-dim);font-family:'JetBrains Mono',monospace;font-size:.67rem;min-width:60px;flex-shrink:0}
+.log-text{color:var(--kb-muted);flex:1}
+
+/* Settings */
+.setting-section{padding:.45rem 1rem;font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--kb-dim);font-weight:700;background:var(--kb-bg);border-bottom:1px solid var(--kb-border)}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:.65rem 1rem;border-bottom:1px solid rgba(26,42,61,.6);gap:1rem}
+.setting-row:last-child{border-bottom:none}
+.setting-label{font-size:.79rem;font-weight:500;color:var(--kb-text)}
+.setting-desc{font-size:.67rem;color:var(--kb-muted);margin-top:2px}
+.setting-val{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--kb-accent2);font-variant-numeric:tabular-nums;flex-shrink:0}
+
+/* Toast */
+.toast-stack{position:fixed;bottom:1.25rem;right:1.25rem;z-index:9999;display:flex;flex-direction:column-reverse;gap:.45rem;max-width:360px}
+.kb-toast{padding:.7rem 1rem;border-radius:10px;font-size:.78rem;display:flex;align-items:center;gap:.5rem;cursor:pointer;position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.3);animation:slideRight .25s ease}
+.kb-toast.success{background:rgba(16,113,60,.92);color:#fff;border:1px solid rgba(16,185,129,.2)}
+.kb-toast.error{background:rgba(153,27,27,.92);color:#fff;border:1px solid rgba(239,68,68,.2)}
+.kb-toast.info{background:rgba(30,58,138,.92);color:#fff;border:1px solid rgba(59,130,246,.2)}
+.toast-prog{position:absolute;bottom:0;left:0;height:2px;background:rgba(255,255,255,.35);transition:width linear}
+@keyframes slideRight{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* Banner */
+.kb-banner{padding:.65rem 1rem;border-radius:8px;margin-bottom:.75rem;font-size:.78rem;display:none;align-items:center;gap:.55rem;line-height:1.5}
+.kb-banner.err{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);color:var(--kb-red);display:flex}
+.kb-banner.warn{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.15);color:var(--kb-yellow);display:flex}
+.kb-banner svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+
+/* Estimated signals callout */
+.est-callout{margin-bottom:.75rem;padding:.85rem 1rem;background:linear-gradient(135deg,rgba(245,158,11,.05),rgba(249,115,22,.05));border:1px solid rgba(245,158,11,.18);border-radius:10px;display:none}
+.est-callout-header{display:flex;align-items:center;gap:.5rem;font-size:.82rem;font-weight:700;color:var(--kb-yellow);margin-bottom:.45rem}
+.est-callout-header svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+.est-callout-body{font-size:.76rem;color:var(--kb-muted);line-height:1.6}
+.est-callout-body strong{color:var(--kb-text)}
+
+/* Confirm row */
+.confirm-row td{background:var(--kb-surface2)!important;border-top:1px dashed var(--kb-border)!important}
+.confirm-inner{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;font-size:.78rem;padding:.2rem 0}
+.shares-input{width:5rem;padding:.3rem .5rem;border-radius:6px;border:1px solid var(--kb-border);background:var(--kb-bg);color:var(--kb-text);font-size:.78rem;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+
+/* Empty */
+.kb-empty{padding:2.25rem 1.5rem;text-align:center;color:var(--kb-muted);font-size:.8rem}
+.kb-empty svg{display:block;margin:0 auto .65rem;width:38px;height:38px;stroke:var(--kb-border2);fill:none;stroke-width:1.5}
+.kb-empty p{max-width:280px;margin:0 auto;line-height:1.5}
+
+/* Dividers + utils */
+.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}
+footer{padding:1rem 1.5rem;font-size:.67rem;color:var(--kb-dim);text-align:center;border-top:1px solid var(--kb-border);margin-top:2rem}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--kb-border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--kb-border2)}
+
+/* Responsive */
+@media(max-width:768px){
+  .navbar{padding:.5rem .75rem}
+  .hero{padding:2rem .75rem 1.5rem}
+  .hero h1{font-size:1.5rem}
+}
+
+/* PnL colors */
+.pos-green{color:var(--kb-green2)}.pos-red{color:var(--kb-red)}.neg{color:var(--kb-red)}.pos{color:var(--kb-green2)}
+</style>
 </head>
 <body>
-  <header>
-    <h1>Kalshi Odds Scanner</h1>
-    <p id="subtitle">Loading…</p>
-  </header>
-  <main>
-    <div id="warn" class="banner" style="display:none;"></div>
-    <div class="grid">
-      <div class="card">
-        <h2>Last scan</h2>
-        <div class="stat" id="lastScan">—</div>
-      </div>
-      <div class="card">
-        <h2>Scan count</h2>
-        <div class="stat" id="scanCount">0</div>
-      </div>
-      <div class="card">
-        <h2>Odds API credits</h2>
-        <div class="stat" id="oddsCredits">— <small>remaining</small></div>
-      </div>
-      <div class="card">
-        <h2>Realized P&amp;L</h2>
-        <div class="stat" id="pnlTotal">$0.00</div>
-      </div>
-      <div class="card">
-        <h2>Open / settled</h2>
-        <div class="stat"><span id="openCt">0</span> <small>open</small> · <span id="settledCt">0</span> <small>closed</small></div>
+
+<!-- ═══ Navbar ════════════════════════════════════ -->
+<nav class="navbar navbar-expand-md sticky-top">
+  <a class="navbar-brand" href="#home" onclick="navigate('home');return false">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    </div>
+    <span class="brand-name">KalshiBot</span>
+  </a>
+  <div class="collapse navbar-collapse" id="navbarCollapse">
+    <ul class="navbar-nav ms-3 me-auto" id="mainNav">
+      <li class="nav-item"><a class="nav-link active" href="#home" data-page="home">Home</a></li>
+      <li class="nav-item"><a class="nav-link" href="#scanner" data-page="scanner">Scanner</a></li>
+      <li class="nav-item"><a class="nav-link" href="#settings" data-page="settings">Settings</a></li>
+    </ul>
+  </div>
+  <div class="navbar-end">
+    <div class="status-pill">
+      <div class="pulse off" id="statusDot"></div>
+      <span id="topbarStatus">Connecting</span>
+    </div>
+  </div>
+  <button class="navbar-toggler ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+</nav>
+
+<!-- ═══ Toast stack ═══════════════════════════════ -->
+<div class="toast-stack" id="toasts"></div>
+
+<!-- ═══ PAGE: Home ════════════════════════════════ -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <h1>KalshiBot</h1>
+    <p>Real-time Kalshi vs sportsbook edge scanner. Detects arbitrage and value in prediction markets automatically.</p>
+    <div class="hero-actions">
+      <button class="kb-btn kb-btn-primary" onclick="navigate('scanner')" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Open Scanner
+      </button>
+      <button class="kb-btn kb-btn-ghost" id="heroScanBtn" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Run Scan
+        <span class="spinner" id="heroScanSpin"></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="page-wrap">
+    <!-- Quick stats -->
+    <div class="kb-card mb-3">
+      <div class="row-gap cols-5" id="homeStats" style="gap:0">
+        <div class="qstat"><div class="qstat-val" id="hScanCount">0</div><div class="qstat-label">Scans run</div></div>
+        <div class="qstat"><div class="qstat-val" id="hOppCount">0</div><div class="qstat-label">Opportunities</div></div>
+        <div class="qstat"><div class="qstat-val" id="hMapped">0</div><div class="qstat-label">Markets mapped</div></div>
+        <div class="qstat pos-green" id="hPnl-wrap"><div class="qstat-val" id="hPnl">$0.00</div><div class="qstat-label">Realized P&amp;L</div></div>
+        <div class="qstat"><div class="qstat-val" id="hUptime">0m</div><div class="qstat-label">Uptime</div></div>
       </div>
     </div>
 
-    <div class="card" style="margin-bottom:1rem;">
-      <h2>Actions</h2>
-      <div class="actions">
-        <button type="button" id="btnScan">Run scan now</button>
-        <span style="color:var(--muted);font-size:0.8125rem;">Auto-refresh UI every 30s</span>
+    <!-- Health + Activity -->
+    <div class="row-gap cols-2 mb-3">
+      <div class="kb-card">
+        <div class="kb-card-header">
+          <h3>System Health</h3>
+          <span class="kb-badge kb-badge-dim ms-auto" id="healthBadge">Checking</span>
+        </div>
+        <div>
+          <div class="health-row"><div class="health-dot off" id="hDotKalshi"></div><div class="health-info"><div class="health-name">Kalshi API</div><div class="health-desc" id="hDescKalshi">Connecting...</div></div></div>
+          <div class="health-row"><div class="health-dot off" id="hDotOdds"></div><div class="health-info"><div class="health-name">Odds Provider</div><div class="health-desc" id="hDescOdds">Connecting...</div></div></div>
+          <div class="health-row"><div class="health-dot off" id="hDotDb"></div><div class="health-info"><div class="health-name">Database</div><div class="health-desc" id="hDescDb">Connecting...</div></div></div>
+          <div class="health-row"><div class="health-dot off" id="hDotScan"></div><div class="health-info"><div class="health-name">Scanner</div><div class="health-desc" id="hDescScan">Idle</div></div></div>
+        </div>
       </div>
-      <p class="error" id="scanErr" style="display:none;"></p>
+      <div class="kb-card">
+        <div class="kb-card-header"><h3>Activity</h3></div>
+        <ul class="log-list" id="homeLogList">
+          <li class="log-item"><div class="log-dot info"></div><span class="log-time">—</span><span class="log-text">Waiting for first event...</span></li>
+        </ul>
+      </div>
     </div>
 
-    <div class="card" style="margin-bottom:1rem;">
-      <h2>Opportunities</h2>
-      <div style="overflow-x:auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Game</th>
-              <th>Edge</th>
-              <th>Kalshi</th>
-              <th>Hedge</th>
-              <th>Conf</th>
-              <th>Liq</th>
-              <th>Execute</th>
-            </tr>
-          </thead>
+    <!-- Active sports -->
+    <div class="kb-card">
+      <div class="kb-card-header"><h3>Active Sports</h3></div>
+      <div class="kb-card-body" id="sportsGrid" style="display:flex;gap:.5rem;flex-wrap:wrap;padding:.8rem 1rem">
+        <span class="kb-badge kb-badge-dim">Loading...</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PAGE: Scanner ═════════════════════════════ -->
+<div class="page" id="page-scanner">
+  <div class="page-wrap">
+
+    <!-- Error banner -->
+    <div class="kb-banner" id="errBanner">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span id="errText"></span>
+    </div>
+
+    <!-- Stats row -->
+    <div class="row-gap cols-5 mb-3">
+      <div class="kb-card"><div class="stat-card">
+        <div class="stat-icon si-blue"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div class="stat-content"><div class="stat-label">Last scan</div><div class="stat-val" id="lastScan">—</div><div class="stat-sub" id="scanSub">Waiting...</div></div>
+      </div></div>
+      <div class="kb-card"><div class="stat-card">
+        <div class="stat-icon si-blue"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <div class="stat-content"><div class="stat-label">Scans</div><div class="stat-val" id="scanCount">0</div><div class="stat-sub" id="mappedInfo">— mapped</div></div>
+      </div></div>
+      <div class="kb-card"><div class="stat-card">
+        <div class="stat-icon si-yellow"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        <div class="stat-content"><div class="stat-label">API credits</div><div class="stat-val" id="oddsCredits">— <small>left</small></div><div class="stat-sub" id="oddsProviderLabel">Odds provider</div></div>
+      </div></div>
+      <div class="kb-card"><div class="stat-card">
+        <div class="stat-icon si-green"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        <div class="stat-content"><div class="stat-label">Realized P&amp;L</div><div class="stat-val" id="pnlTotal">$0.00</div><div class="stat-sub" id="pnlSub">0W / 0L</div></div>
+      </div></div>
+      <div class="kb-card"><div class="stat-card">
+        <div class="stat-icon si-purple"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>
+        <div class="stat-content"><div class="stat-label">Positions</div><div class="stat-val"><span id="openCt">0</span> <small>open</small> · <span id="settledCt">0</span> <small>closed</small></div></div>
+      </div></div>
+    </div>
+
+    <!-- Action bar -->
+    <div style="display:flex;align-items:center;gap:.55rem;margin-bottom:.75rem;flex-wrap:wrap">
+      <button type="button" class="kb-btn kb-btn-primary kb-btn-sm" id="btnScan">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Scan now <span class="spinner" id="scanSpin"></span>
+      </button>
+      <button type="button" class="kb-btn kb-btn-ghost kb-btn-sm" id="btnMap">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Re-map markets <span class="spinner" id="mapSpin"></span>
+      </button>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:.5rem">
+        <span class="kb-badge kb-badge-dim" id="sportBadge">—</span>
+        <span style="font-size:.72rem;color:var(--kb-muted);font-variant-numeric:tabular-nums" id="countdown">—</span>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row-gap cols-2 mb-3">
+      <div class="kb-card">
+        <div class="kb-card-header"><h3>Scan History</h3><span class="kb-badge kb-badge-dim ms-auto" id="scanHistLabel">—</span></div>
+        <div class="kb-card-body"><div id="scanChart" style="min-height:160px"></div></div>
+      </div>
+      <div class="kb-card">
+        <div class="kb-card-header"><h3>Edge Distribution</h3></div>
+        <div class="kb-card-body"><div id="edgeChart" style="min-height:160px"></div></div>
+      </div>
+    </div>
+
+    <!-- Estimated signals explanation callout -->
+    <div class="est-callout" id="estimatedCallout">
+      <div class="est-callout-header">
+        <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        What are Estimated Signals?
+      </div>
+      <div class="est-callout-body">
+        Rows marked <span class="kb-badge kb-badge-amber" style="vertical-align:middle">~EST</span> mean <strong>Kalshi has no active market makers</strong> for that contract — the orderbook is empty. To still show you useful data, the system takes <strong>real DraftKings odds</strong> from ESPN (free feed), converts them to a fair probability (removing the sportsbook's built-in juice), then simulates what a Kalshi price <em>might</em> look like if a market opened at ~90% of fair value — a common discount to attract initial buyers.
+        <br/><br/>
+        Think of these as <strong>watchlist items</strong>: they answer "if Kalshi opened this market at a discount today, would there be edge?" When Kalshi actually posts live prices, the system will automatically compare those real prices against these same sportsbook odds and surface genuine opportunities.
+        <br/><br/>
+        <strong>⚠ Do not execute estimated signals</strong> — there is no live Kalshi market to trade against.
+      </div>
+    </div>
+
+    <!-- Opportunities -->
+    <div class="kb-card mb-3">
+      <div class="kb-card-header">
+        <h3>Opportunities</h3>
+        <span class="kb-badge kb-badge-blue ms-auto" id="oppBadge" style="display:none">0</span>
+      </div>
+      <div style="overflow-x:auto;max-height:480px;overflow-y:auto">
+        <table class="kb-table" id="oppTable">
+          <thead><tr>
+            <th data-col="idx" style="width:36px"># <span class="sort-arrow">▲</span></th>
+            <th data-col="game">Game <span class="sort-arrow">▲</span></th>
+            <th data-col="edge">Edge <span class="sort-arrow">▲</span></th>
+            <th data-col="action">Kalshi action <span class="sort-arrow">▲</span></th>
+            <th data-col="hedge">Hedge <span class="sort-arrow">▲</span></th>
+            <th data-col="books">Books <span class="sort-arrow">▲</span></th>
+            <th data-col="conf">Conf <span class="sort-arrow">▲</span></th>
+            <th data-col="liq">Liq <span class="sort-arrow">▲</span></th>
+            <th data-col="kelly">Kelly <span class="sort-arrow">▲</span></th>
+            <th style="min-width:96px">Action</th>
+          </tr></thead>
           <tbody id="oppBody"></tbody>
         </table>
-      </div>
-      <p id="oppEmpty" style="color:var(--muted);display:none;">No opportunities. Configure APIs and mappings, then run a scan.</p>
-    </div>
-
-    <div class="grid">
-      <div class="card">
-        <h2>Open positions</h2>
-        <div style="overflow-x:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Ticker</th>
-                <th>Dir</th>
-                <th>Shares</th>
-                <th>Entry</th>
-              </tr>
-            </thead>
-            <tbody id="posBody"></tbody>
-          </table>
-        </div>
-        <p id="posEmpty" style="color:var(--muted);margin-top:0.5rem;display:none;">No open positions.</p>
-      </div>
-      <div class="card">
-        <h2>Recent settled</h2>
-        <div style="overflow-x:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Ticker</th>
-                <th>P&amp;L</th>
-              </tr>
-            </thead>
-            <tbody id="settledBody"></tbody>
-          </table>
+        <div class="kb-empty" id="oppEmpty">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <p>No opportunities yet. The scanner will surface edges as they appear in the market.</p>
         </div>
       </div>
     </div>
 
-    <footer>Kelly fraction and bankroll from env. Execution requires KALSHI_ODDS_EXECUTION_ENABLED=true.</footer>
-  </main>
-  <script>
-    const fmtMoney = (n) => {
-      const x = Number(n);
-      if (Number.isNaN(x)) return "—";
-      return (x >= 0 ? "$" : "-$") + Math.abs(x).toFixed(2);
-    };
-    const edgeClass = (c) => {
-      if (c >= 2) return "edge-high";
-      if (c >= 1) return "edge-med";
-      return "edge-low";
-    };
+    <!-- Positions + Settled -->
+    <div class="row-gap cols-2 mb-3">
+      <div class="kb-card">
+        <div class="kb-card-header"><h3>Open Positions</h3></div>
+        <div style="overflow-x:auto;max-height:260px;overflow-y:auto">
+          <table class="kb-table"><thead><tr><th>Ticker</th><th>Dir</th><th>Shares</th><th>Entry</th></tr></thead><tbody id="posBody"></tbody></table>
+          <div class="kb-empty" id="posEmpty">No open positions</div>
+        </div>
+      </div>
+      <div class="kb-card">
+        <div class="kb-card-header"><h3>Settled Trades</h3></div>
+        <div style="overflow-x:auto;max-height:260px;overflow-y:auto">
+          <table class="kb-table"><thead><tr><th>Ticker</th><th>P&amp;L</th><th>Shares</th></tr></thead><tbody id="settledBody"></tbody></table>
+          <div class="kb-empty" id="settledEmpty">No settled trades</div>
+        </div>
+      </div>
+    </div>
 
-    async function loadState() {
-      let d;
-      try {
-        const r = await fetch("/api/state");
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        d = await r.json();
-      } catch (e) {
-        console.error("loadState failed:", e);
-        document.getElementById("subtitle").textContent = "Error fetching state: " + e.message;
-        return;
-      }
-      try {
-        const sub = [];
-        if (!d.kalshi_configured) sub.push("Kalshi API not configured");
-        if (!d.odds_configured) sub.push("Odds API not configured");
-        document.getElementById("subtitle").textContent = sub.length
-          ? sub.join(" \u00b7 ")
-          : "Live \u00b7 poll " + d.poll_interval_seconds + "s \u00b7 execution " + (d.execution_enabled ? "on" : "off");
+    <!-- Activity log -->
+    <div class="kb-card">
+      <div class="kb-card-header"><h3>Activity Log</h3></div>
+      <ul class="log-list" id="logList">
+        <li class="log-item"><div class="log-dot info"></div><span class="log-time">—</span><span class="log-text">Waiting for first scan...</span></li>
+      </ul>
+    </div>
 
-        var warn = document.getElementById("warn");
-        if (d.last_error) {
-          warn.style.display = "block";
-          warn.textContent = "Last error: " + d.last_error;
-        } else {
-          warn.style.display = "none";
-        }
+  </div>
+</div>
 
-        document.getElementById("lastScan").textContent = d.last_scan_iso
-          ? new Date(d.last_scan_iso).toLocaleString()
-          : "Never";
-        document.getElementById("scanCount").textContent = String(d.scan_count || 0);
-        document.getElementById("oddsCredits").innerHTML =
-          (d.odds_requests_remaining != null ? String(d.odds_requests_remaining) : "\u2014") + " <small>remaining</small>";
-        document.getElementById("pnlTotal").textContent = fmtMoney(d.pnl ? d.pnl.total_realized_pnl : 0);
-        document.getElementById("openCt").textContent = String(d.pnl ? d.pnl.open_count : 0);
-        document.getElementById("settledCt").textContent = String(d.pnl ? d.pnl.settled_count : 0);
+<!-- ═══ PAGE: Settings ════════════════════════════ -->
+<div class="page" id="page-settings">
+  <div class="page-wrap">
+    <div style="margin-bottom:1.25rem">
+      <h1 style="font-size:1.35rem;font-weight:800;letter-spacing:-.01em;margin-bottom:.3rem">Settings</h1>
+      <p style="color:var(--kb-muted);font-size:.83rem">Configuration loaded from <code style="color:var(--kb-accent2);font-family:'JetBrains Mono',monospace;font-size:.78rem">.env</code>. Edit the file and restart to apply changes.</p>
+    </div>
+    <div class="row-gap cols-2">
+      <div class="kb-card">
+        <div class="setting-section">Scanner</div>
+        <div id="settingsScanner"></div>
+      </div>
+      <div class="kb-card">
+        <div class="setting-section">Execution &amp; Position Sizing</div>
+        <div id="settingsExecution"></div>
+      </div>
+      <div class="kb-card">
+        <div class="setting-section">API Connections</div>
+        <div id="settingsApi"></div>
+      </div>
+      <div class="kb-card">
+        <div class="setting-section">Matching &amp; Mapping</div>
+        <div id="settingsMatching"></div>
+      </div>
+    </div>
+  </div>
+</div>
 
-        var opps = d.opportunities || [];
-        var tbody = document.getElementById("oppBody");
-        tbody.innerHTML = "";
-        document.getElementById("oppEmpty").style.display = opps.length ? "none" : "block";
-        for (var i = 0; i < opps.length; i++) {
-          var o = opps[i];
-          var tr = document.createElement("tr");
-          var ec = edgeClass(o.edge_cents || 0);
-          tr.innerHTML =
-            "<td>" + (i + 1) + "</td>" +
-            "<td>" + escapeHtml((o.game_label || "").substring(0, 28)) + "</td>" +
-            "<td class='" + ec + "'>" + Number(o.edge_cents || 0).toFixed(1) + "c</td>" +
-            "<td>" + escapeHtml((o.kalshi_action || "").substring(0, 40)) + "</td>" +
-            "<td>" + escapeHtml((o.hedge_action || "").substring(0, 36)) + "</td>" +
-            "<td>" + escapeHtml(String(o.confidence || "")) + "</td>" +
-            "<td>" + escapeHtml(String(o.kalshi_liquidity || "")) + "</td>" +
-            "<td><input type='number' min='1' value='100' aria-label='Shares for row " + (i+1) + "' id='sh-" + (i+1) + "' /> " +
-            "<button type='button' class='secondary' data-exec='" + (i+1) + "'>Dry run</button>" +
-            (d.execution_enabled ? " <button type='button' data-live='" + (i+1) + "'>Place order</button>" : "") +
-            "</td>";
-          tbody.appendChild(tr);
-        }
-        tbody.querySelectorAll("button[data-exec]").forEach(function(btn) {
-          btn.addEventListener("click", function() { doExec(parseInt(btn.getAttribute("data-exec"), 10), true); });
-        });
-        tbody.querySelectorAll("button[data-live]").forEach(function(btn) {
-          btn.addEventListener("click", function() { doExec(parseInt(btn.getAttribute("data-live"), 10), false); });
-        });
+<footer>KalshiBot &middot; Set <code style="font-family:'JetBrains Mono',monospace">KALSHI_ODDS_EXECUTION_ENABLED=true</code> to enable live trading</footer>
 
-        var pos = d.positions || [];
-        var pb = document.getElementById("posBody");
-        pb.innerHTML = "";
-        document.getElementById("posEmpty").style.display = pos.length ? "none" : "block";
-        for (var j = 0; j < pos.length; j++) {
-          var p = pos[j];
-          var ptr = document.createElement("tr");
-          ptr.innerHTML =
-            "<td>" + escapeHtml(p.ticker) + "</td>" +
-            "<td>" + escapeHtml(p.direction) + "</td>" +
-            "<td>" + escapeHtml(String(p.shares)) + "</td>" +
-            "<td>" + escapeHtml(String(p.entry_price_cents)) + "c</td>";
-          pb.appendChild(ptr);
-        }
+<!-- ═══ Scripts ═══════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta21/dist/js/tabler.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.0/dist/apexcharts.min.js"></script>
+<script>
+(function(){
+"use strict";
+var D=document;
+function $(id){return D.getElementById(id)}
+function esc(s){var d=D.createElement("div");d.textContent=s;return d.innerHTML}
+function fmtMoney(n){var x=Number(n);if(isNaN(x))return"—";return(x>=0?"+$":"-$")+Math.abs(x).toFixed(2)}
+function fmtTime(iso){if(!iso)return"—";return new Date(iso).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"})}
+function fmtAgo(iso){if(!iso)return"";var s=Math.floor((Date.now()-new Date(iso).getTime())/1000);if(s<5)return"just now";if(s<60)return s+"s ago";if(s<3600)return Math.floor(s/60)+"m ago";return Math.floor(s/3600)+"h ago"}
+function fmtUptime(s){if(s<60)return s+"s";if(s<3600)return Math.floor(s/60)+"m";var h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h+"h "+m+"m"}
+function edgeCls(c){return c>=2?"hi":c>=1?"md":"lo"}
 
-        var settled = d.settled || [];
-        var sb = document.getElementById("settledBody");
-        sb.innerHTML = "";
-        for (var k = 0; k < Math.min(settled.length, 20); k++) {
-          var sp = settled[k];
-          var str = document.createElement("tr");
-          str.innerHTML =
-            "<td>" + escapeHtml(sp.ticker) + "</td>" +
-            "<td>" + fmtMoney(sp.realized_pnl) + "</td>";
-          sb.appendChild(str);
-        }
-      } catch (e) {
-        console.error("loadState render error:", e);
-        document.getElementById("subtitle").textContent = "Render error: " + e.message;
-      }
+var pollSec=60,nextIn=60,sortCol=null,sortAsc=true,openConfirmIdx=-1;
+var actLog=[],scanHist=[],lastState=null,lastHealth=null;
+var scanChartInst=null,edgeChartInst=null;
+
+/* ── Navigation ─────────────────────────────────── */
+function navigate(page){
+  D.querySelectorAll(".page").forEach(function(p){p.classList.remove("active")});
+  var el=$("page-"+page);if(el)el.classList.add("active");
+  D.querySelectorAll("#mainNav .nav-link").forEach(function(a){
+    a.classList.toggle("active",a.getAttribute("data-page")===page);
+  });
+  window.location.hash=page;
+  if(page==="scanner"){setTimeout(function(){drawScanChart();drawEdgeChart()},50)}
+}
+window.navigate=navigate;
+D.querySelectorAll("#mainNav .nav-link").forEach(function(a){
+  a.addEventListener("click",function(e){e.preventDefault();navigate(a.getAttribute("data-page"))});
+});
+var initPage=(window.location.hash||"#home").replace("#","");
+if(!$("page-"+initPage))initPage="home";
+navigate(initPage);
+window.addEventListener("hashchange",function(){var p=(window.location.hash||"#home").replace("#","");if($("page-"+p))navigate(p)});
+
+/* ── Toast ──────────────────────────────────────── */
+function toast(msg,type){
+  var el=D.createElement("div");el.className="kb-toast "+(type||"info");
+  el.textContent=msg;
+  var prog=D.createElement("div");prog.className="toast-prog";prog.style.width="100%";el.appendChild(prog);
+  $("toasts").appendChild(el);
+  el.addEventListener("click",function(){el.remove()});
+  var dur=5000,start=Date.now();
+  var iv=setInterval(function(){var pct=Math.max(0,100-((Date.now()-start)/dur)*100);prog.style.width=pct+"%";if(pct<=0){clearInterval(iv);el.remove()}},50);
+  while($("toasts").children.length>4)$("toasts").removeChild($("toasts").firstChild);
+}
+
+/* ── Activity log ───────────────────────────────── */
+function addLog(text,type){
+  actLog.unshift({time:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"}),text:text,type:type||"ok"});
+  if(actLog.length>20)actLog.pop();
+  renderLog();
+}
+function renderLog(){
+  ["logList","homeLogList"].forEach(function(id){
+    var ul=$(id);if(!ul)return;ul.innerHTML="";
+    if(!actLog.length){ul.innerHTML='<li class="log-item"><div class="log-dot info"></div><span class="log-time">—</span><span class="log-text">Waiting for events...</span></li>';return}
+    for(var i=0;i<actLog.length;i++){
+      var e=actLog[i],li=D.createElement("li");li.className="log-item";
+      li.innerHTML='<div class="log-dot '+esc(e.type)+'"></div><span class="log-time">'+esc(e.time)+'</span><span class="log-text">'+esc(e.text)+'</span>';
+      ul.appendChild(li);
     }
+  });
+}
 
-    function escapeHtml(s) {
-      const t = document.createElement("div");
-      t.textContent = s;
-      return t.innerHTML;
-    }
+/* ── ApexCharts ─────────────────────────────────── */
+var APEX_COMMON={
+  chart:{background:"transparent",toolbar:{show:false},zoom:{enabled:false},animations:{speed:400,easing:"easeinout"}},
+  theme:{mode:"dark"},
+  grid:{borderColor:"rgba(26,42,61,.6)",strokeDashArray:4,xaxis:{lines:{show:false}}},
+  tooltip:{theme:"dark",style:{fontFamily:"'Inter',sans-serif",fontSize:"12px"}},
+};
 
-    async function doExec(index, dryRun) {
-      const inp = document.getElementById("sh-" + index);
-      const shares = inp ? parseInt(inp.value, 10) || 100 : 100;
-      const r = await fetch("/api/execute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ index, shares, dry_run: dryRun }),
-      });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) {
-        alert("Execute failed: " + (j.detail || r.statusText));
-        return;
-      }
-      alert(dryRun ? "Dry run OK: " + JSON.stringify(j) : "Order result: " + JSON.stringify(j));
-      loadState();
-    }
+function drawScanChart(){
+  var el=$("scanChart");if(!el)return;
+  if(scanHist.length<2){
+    if(scanChartInst){scanChartInst.destroy();scanChartInst=null}
+    el.innerHTML='<div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--kb-muted);font-size:.78rem">Scan data will appear here</div>';
+    return;
+  }
+  var cats=scanHist.map(function(s){return s.label});
+  var vals=scanHist.map(function(s){return s.opps});
+  var opts=Object.assign({},APEX_COMMON,{
+    chart:Object.assign({},APEX_COMMON.chart,{type:"area",height:160}),
+    series:[{name:"Opportunities",data:vals}],
+    xaxis:{categories:cats,labels:{style:{colors:"#607d96",fontSize:"10px",fontFamily:"'JetBrains Mono',monospace"},rotate:-30,maxHeight:48},axisBorder:{show:false},axisTicks:{show:false}},
+    yaxis:{labels:{style:{colors:"#607d96",fontSize:"10px"},formatter:function(v){return Math.round(v)}},min:0},
+    fill:{type:"gradient",gradient:{shadeIntensity:1,opacityFrom:.35,opacityTo:.02,stops:[0,90,100],colorStops:[{offset:0,color:"#3b82f6",opacity:.35},{offset:100,color:"#3b82f6",opacity:.02}]}},
+    stroke:{curve:"smooth",width:2,colors:["#3b82f6"]},
+    markers:{size:4,colors:["#3b82f6"],strokeColors:"#080d14",strokeWidth:2,hover:{size:6}},
+    dataLabels:{enabled:false},
+  });
+  if(scanChartInst){scanChartInst.updateOptions(opts)}
+  else{scanChartInst=new ApexCharts(el,opts);scanChartInst.render()}
+  var lbl=$("scanHistLabel");if(lbl)lbl.textContent=scanHist.length+" scans";
+}
 
-    document.getElementById("btnScan").addEventListener("click", async () => {
-      const err = document.getElementById("scanErr");
-      err.style.display = "none";
-      const r = await fetch("/api/scan", { method: "POST" });
-      const j = await r.json();
-      if (!j.ok && j.error) {
-        err.style.display = "block";
-        err.textContent = j.error;
-      }
-      loadState();
+function drawEdgeChart(){
+  var el=$("edgeChart");if(!el)return;
+  var opps=lastState?lastState.opportunities||[]:[];
+  if(!opps.length){
+    if(edgeChartInst){edgeChartInst.destroy();edgeChartInst=null}
+    el.innerHTML='<div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--kb-muted);font-size:.78rem">Run a scan to see edge distribution</div>';
+    return;
+  }
+  var cats=["0–1¢","1–2¢","2–3¢","3–5¢","5¢+"];
+  var buckets=[0,0,0,0,0];
+  opps.forEach(function(o){var e=o.edge_cents||0;if(e<1)buckets[0]++;else if(e<2)buckets[1]++;else if(e<3)buckets[2]++;else if(e<5)buckets[3]++;else buckets[4]++});
+  var barColors=["#607d96","#f59e0b","#f97316","#10b981","#3b82f6"];
+  var opts=Object.assign({},APEX_COMMON,{
+    chart:Object.assign({},APEX_COMMON.chart,{type:"bar",height:160}),
+    series:[{name:"Contracts",data:buckets}],
+    xaxis:{categories:cats,labels:{style:{colors:"#607d96",fontSize:"10px",fontFamily:"'Inter',sans-serif"}},axisBorder:{show:false},axisTicks:{show:false}},
+    yaxis:{labels:{style:{colors:"#607d96",fontSize:"10px"},formatter:function(v){return Math.round(v)}},min:0},
+    plotOptions:{bar:{borderRadius:5,distributed:true,columnWidth:"62%",dataLabels:{position:"top"}}},
+    dataLabels:{enabled:true,style:{fontSize:"11px",fontWeight:700,colors:["#dce9f5"]},offsetY:-4,formatter:function(v){return v>0?v:""}},
+    colors:barColors,
+    legend:{show:false},
+  });
+  if(edgeChartInst){edgeChartInst.updateOptions(opts)}
+  else{edgeChartInst=new ApexCharts(el,opts);edgeChartInst.render()}
+}
+
+/* ── Sort ───────────────────────────────────────── */
+function getVal(o,col){
+  switch(col){
+    case"idx":return 0;case"game":return(o.game_label||"").toLowerCase();
+    case"edge":return o.edge_cents||0;case"action":return(o.kalshi_action||"").toLowerCase();
+    case"hedge":return(o.hedge_action||"").toLowerCase();case"books":return o.book_count||0;
+    case"conf":return o.confidence==="high"?3:o.confidence==="med"?2:1;
+    case"liq":return o.kalshi_liquidity||0;case"kelly":return o.kelly_shares||0;
+    default:return 0;
+  }
+}
+D.querySelectorAll("#oppTable th[data-col]").forEach(function(th){
+  th.addEventListener("click",function(){
+    var col=th.getAttribute("data-col");
+    if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=true}
+    D.querySelectorAll("#oppTable th").forEach(function(h){h.classList.remove("sorted");var a=h.querySelector(".sort-arrow");if(a)a.textContent="▲"});
+    th.classList.add("sorted");var arrow=th.querySelector(".sort-arrow");if(arrow)arrow.textContent=sortAsc?"▲":"▼";
+    if(lastState)renderOpps(lastState);
+  });
+});
+
+/* ── Render: Opportunities ──────────────────────── */
+function renderOpps(d){
+  var opps=(d.opportunities||[]).slice();
+  if(sortCol)opps.sort(function(a,b){var va=getVal(a,sortCol),vb=getVal(b,sortCol);if(va<vb)return sortAsc?-1:1;if(va>vb)return sortAsc?1:-1;return 0});
+  var tb=$("oppBody");tb.innerHTML="";
+  $("oppEmpty").style.display=opps.length?"none":"block";
+  var badge=$("oppBadge");if(badge){badge.style.display=opps.length?"inline-flex":"none";badge.textContent=opps.length}
+  var hasEst=opps.some(function(o){return o.is_estimated});
+  var callout=$("estimatedCallout");if(callout)callout.style.display=hasEst&&opps.length?"block":"none";
+  for(var i=0;i<opps.length;i++){
+    var o=opps[i],idx=i+1;
+    var ec=edgeCls(o.edge_cents||0);
+    var cc=(o.confidence||"").toLowerCase();
+    var pct=Math.min(100,Math.max(4,(o.edge_cents||0)*22));
+    var estBadge=o.is_estimated?'<span class="kb-badge kb-badge-amber" title="Estimated: no live Kalshi orderbook. Kalshi price simulated at ~90% of sportsbook fair value.">~EST</span> ':'';
+    var srcLabel=o.odds_source?'<span class="kb-badge kb-badge-dim" style="font-size:.58rem;padding:1px 6px">'+esc(o.odds_source.toUpperCase())+'</span> ':'';
+    var confBadge=(cc==="high"?"kb-badge-green":cc==="med"?"kb-badge-yellow":"kb-badge-dim");
+    var tr=D.createElement("tr");
+    if(o.is_estimated)tr.style.opacity="0.85";
+    tr.innerHTML=
+      '<td style="color:var(--kb-muted);font-size:.72rem">'+idx+'</td>'+
+      '<td style="min-width:180px">'+estBadge+srcLabel+'<span class="mono" title="'+esc(o.game_label||"")+'">'+esc((o.game_label||"").substring(0,24))+'</span></td>'+
+      '<td class="edge-cell" style="min-width:70px"><div class="edge-fill '+ec+'" style="width:'+pct+'%"></div><span class="edge-text '+ec+' mono">'+Number(o.edge_cents||0).toFixed(1)+'¢</span></td>'+
+      '<td style="min-width:190px;font-size:.75rem" title="'+esc(o.kalshi_action||"")+'">'+esc((o.kalshi_action||"").substring(0,44))+'</td>'+
+      '<td style="min-width:160px;font-size:.73rem;color:var(--kb-muted)" title="'+esc(o.hedge_action||"")+'">'+esc((o.hedge_action||"").substring(0,38))+'</td>'+
+      '<td style="text-align:center">'+esc(String(o.book_count||""))+'</td>'+
+      '<td><span class="kb-badge '+confBadge+'">'+esc(String(o.confidence||"").toUpperCase())+'</span></td>'+
+      '<td class="mono" style="color:var(--kb-muted)">'+esc(String(o.kalshi_liquidity||""))+'</td>'+
+      '<td class="mono" style="color:var(--kb-muted)">'+esc(String(o.kelly_shares||""))+'</td>'+
+      '<td>'+(o.is_estimated
+        ?'<span style="font-size:.7rem;color:var(--kb-dim);font-style:italic">watch only</span>'
+        :'<button type="button" class="kb-btn kb-btn-ghost kb-btn-sm" data-idx="'+idx+'">Execute</button>')+'</td>';
+    tb.appendChild(tr);
+    if(!o.is_estimated&&openConfirmIdx===idx)appendConfirmRow(tb,o,idx,d.execution_enabled);
+  }
+  tb.querySelectorAll("button[data-idx]").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      var ix=parseInt(btn.getAttribute("data-idx"),10);
+      openConfirmIdx=openConfirmIdx===ix?-1:ix;
+      if(lastState)renderOpps(lastState);
     });
+  });
+}
 
-    loadState();
-    setInterval(loadState, 30000);
-  </script>
+function appendConfirmRow(tbody,o,idx,execEnabled){
+  var tr=D.createElement("tr");tr.className="confirm-row";
+  var kelly=o.kelly_shares||100;
+  var edge$=(Number(o.edge_cents||0)*kelly/100).toFixed(2);
+  tr.innerHTML='<td colspan="10"><div class="confirm-inner">'+
+    '<strong style="color:var(--kb-text)">'+esc(o.kalshi_action||"")+'</strong>'+
+    ' · Shares: <input type="number" class="shares-input" min="1" value="'+kelly+'" id="cShares-'+idx+'" aria-label="shares"/>'+
+    ' · <span id="cEdge-'+idx+'" style="color:var(--kb-green2)">Est $'+edge$+'</span>'+
+    ' <button type="button" class="kb-btn kb-btn-ghost kb-btn-sm" data-dry="'+idx+'">Dry run</button>'+
+    (execEnabled?' <button type="button" class="kb-btn kb-btn-success kb-btn-sm" data-live="'+idx+'">Confirm order</button>':' <span style="color:var(--kb-muted);font-size:.72rem">(enable in .env)</span>')+
+    ' <button type="button" class="kb-btn kb-btn-ghost kb-btn-sm" data-cancel="'+idx+'" style="width:28px;height:28px;padding:0">×</button>'+
+    '</div></td>';
+  tbody.appendChild(tr);
+  tr.querySelector("[data-dry]").addEventListener("click",function(){doExec(idx,true)});
+  if(execEnabled)tr.querySelector("[data-live]").addEventListener("click",function(){doExec(idx,false)});
+  tr.querySelector("[data-cancel]").addEventListener("click",function(){openConfirmIdx=-1;if(lastState)renderOpps(lastState)});
+  var inp=tr.querySelector("input"),edgeSpan=$("cEdge-"+idx);
+  inp.addEventListener("input",function(){edgeSpan.textContent="Est $"+(Number(o.edge_cents||0)*(parseInt(inp.value,10)||1)/100).toFixed(2)});
+}
+
+/* ── Render: Positions ──────────────────────────── */
+function renderPositions(d){
+  var pos=d.positions||[];$("posBody").innerHTML="";$("posEmpty").style.display=pos.length?"none":"block";
+  for(var j=0;j<pos.length;j++){
+    var p=pos[j],tr=D.createElement("tr");
+    tr.innerHTML='<td class="mono">'+esc(p.ticker)+'</td><td>'+esc(p.direction)+'</td><td class="mono">'+esc(String(p.shares))+'</td><td class="mono">'+esc(String(p.entry_price_cents))+'¢</td>';
+    $("posBody").appendChild(tr);
+  }
+  var settled=d.settled||[];$("settledBody").innerHTML="";
+  var se=$("settledEmpty");if(se)se.style.display=settled.length?"none":"block";
+  for(var k=0;k<Math.min(settled.length,20);k++){
+    var sp=settled[k],str=D.createElement("tr");
+    var pnlCls=sp.realized_pnl>0?"pos":sp.realized_pnl<0?"neg":"";
+    str.innerHTML='<td class="mono">'+esc(sp.ticker)+'</td><td class="mono '+pnlCls+'">'+fmtMoney(sp.realized_pnl)+'</td><td class="mono">'+esc(String(sp.shares))+'</td>';
+    $("settledBody").appendChild(str);
+  }
+}
+
+/* ── Render: Health ─────────────────────────────── */
+function renderHealth(h){
+  lastHealth=h;
+  function dot(id,state){var el=$(id);if(el)el.className="health-dot "+state}
+  function desc(id,text){var el=$(id);if(el)el.textContent=text}
+  var overall=h.status==="healthy";
+  $("statusDot").className="pulse "+(overall?"ok":h.scanner&&h.scanner.last_error?"warn":"off");
+  $("topbarStatus").textContent=overall?"System healthy":"Degraded";
+  dot("hDotKalshi",h.kalshi&&h.kalshi.connected?"ok":"off");
+  desc("hDescKalshi",h.kalshi&&h.kalshi.connected?"Connected — RSA auth OK":"Not connected"+(h.kalshi&&!h.kalshi.configured?" — configure API key":""));
+  var activeP=h.active_provider||"none";
+  var oddsOk=(h.odds_primary&&h.odds_primary.connected)||(h.odds_fallback&&h.odds_fallback.connected);
+  dot("hDotOdds",oddsOk?"ok":(h.odds_primary&&h.odds_primary.configured?"warn":"off"));
+  desc("hDescOdds",oddsOk?"Active: "+activeP:h.scanner&&h.scanner.last_error?"Rate limited — ESPN fallback":"Not connected");
+  dot("hDotDb",h.database&&h.database.connected?"ok":"off");
+  desc("hDescDb",h.database&&h.database.connected?"SQLite connected":"Not connected");
+  var scanOk=h.scanner&&h.scanner.scan_count>0;
+  dot("hDotScan",scanOk&&!h.scanner.last_error?"ok":scanOk&&h.scanner.last_error?"warn":"off");
+  desc("hDescScan",h.scanner?(h.scanner.last_error&&h.scanner.last_error.indexOf("Waiting")<0?h.scanner.last_error:h.scanner.scan_count+" scans completed"):"Idle");
+  var hb=$("healthBadge");
+  if(hb){hb.textContent=overall?"Healthy":"Degraded";hb.className="kb-badge "+(overall?"kb-badge-green":"kb-badge-yellow")}
+  $("hUptime").textContent=fmtUptime(h.uptime_seconds||0);
+}
+
+/* ── Render: Settings ───────────────────────────── */
+function renderSettings(cfg){
+  function row(label,val,desc){
+    return'<div class="setting-row"><div><div class="setting-label">'+esc(label)+'</div>'+(desc?'<div class="setting-desc">'+esc(desc)+'</div>':'')+'</div><span class="setting-val">'+esc(String(val))+'</span></div>'
+  }
+  $("settingsScanner").innerHTML=
+    row("Sports",cfg.sports?cfg.sports.join(", "):"—","Comma-separated sport keys to scan")+
+    row("Min edge",""+cfg.min_edge_bps+" bps","Minimum edge to surface an alert")+
+    row("Min liquidity",cfg.min_liquidity+" shares","Minimum Kalshi orderbook size")+
+    row("Poll interval",cfg.poll_interval_seconds+"s","Seconds between automatic scans")+
+    row("Max staleness",cfg.max_staleness_seconds+"s","Maximum age for valid price data")+
+    row("Kalshi slippage",((cfg.kalshi_slippage_buffer||0)*100).toFixed(1)+"%","Buffer applied to Kalshi orderbook prices")+
+    row("Sportsbook friction",((cfg.sportsbook_execution_friction||0)*100).toFixed(1)+"%","Friction buffer for sportsbook execution");
+  $("settingsExecution").innerHTML=
+    row("Execution enabled",cfg.execution_enabled?"✅ Yes":"❌ No","Must be true to place real orders")+
+    row("Bankroll","$"+cfg.bankroll_dollars,"Total capital for Kelly sizing")+
+    row("Kelly fraction",(cfg.kelly_fraction*100)+"%","Fraction of full Kelly to bet")+
+    row("Max notional/trade","$"+cfg.max_notional_per_trade,"Dollar cap per single Kalshi order");
+  var apiHtml=row("Active provider",lastHealth?lastHealth.active_provider:"—");
+  if(lastHealth&&lastHealth.odds_primary)apiHtml+=row("The Odds API",lastHealth.odds_primary.configured?"Configured ✓":"Not set — add KALSHI_ODDS_ODDS_API_KEY");
+  if(lastHealth&&lastHealth.odds_fallback)apiHtml+=row("OddsPapi",lastHealth.odds_fallback.configured?"Configured ✓":"Not set — add KALSHI_ODDS_ODDSPAPI_API_KEY");
+  apiHtml+=row("ESPN (free)",lastHealth&&lastHealth.kalshi?"Auto-enabled":"—","No key needed — used as final fallback");
+  apiHtml+=row("Kalshi",lastHealth&&lastHealth.kalshi?lastHealth.kalshi.configured?"Configured ✓":"Not set":"—");
+  $("settingsApi").innerHTML=apiHtml;
+  $("settingsMatching").innerHTML=
+    row("Auto-map",cfg.auto_map_enabled?"Enabled":"Disabled","Auto-match Kalshi contracts to sportsbook events")+
+    row("Fuzzy match",cfg.fuzzy_match_enabled?"Enabled":"Disabled","Use fuzzy string matching for team names");
+}
+
+/* ── Load state ─────────────────────────────────── */
+var prevScanCount=-1;
+async function loadState(){
+  try{
+    var r=await fetch("/api/state");if(!r.ok)throw new Error("HTTP "+r.status);
+    var d=await r.json();
+    lastState=d;pollSec=d.poll_interval_seconds||60;
+
+    var hasErr=d.last_error&&d.last_error.indexOf("Waiting")<0;
+    var banner=$("errBanner");
+    if(banner){
+      if(hasErr){
+        banner.className="kb-banner "+(d.last_error.indexOf("quota")>=0||d.last_error.indexOf("rate")>=0?"warn":"err");
+        $("errText").textContent=d.last_error;
+      } else {banner.className="kb-banner"}
+    }
+
+    $("lastScan").textContent=d.last_scan_iso?fmtTime(d.last_scan_iso):"—";
+    $("scanSub").textContent=d.last_scan_iso?fmtAgo(d.last_scan_iso):"Waiting...";
+    $("scanCount").textContent=String(d.scan_count||0);
+    $("hScanCount").textContent=String(d.scan_count||0);
+    if(d.mapped_count)$("mappedInfo").textContent=d.mapped_count+" mapped";
+    $("hMapped").textContent=String(d.mapped_count||0);
+    $("hOppCount").textContent=String((d.opportunities||[]).length);
+
+    if(d.active_odds_provider){
+      var lbl=$("oddsProviderLabel");if(lbl)lbl.textContent=d.active_odds_provider;
+    }
+
+    $("sportBadge").textContent=(d.sports||[]).map(function(s){return s.replace(/_/g," ").replace(/\b\w/g,function(c){return c.toUpperCase()})}).join(", ")||"—";
+    var sGrid=$("sportsGrid");
+    if(sGrid){sGrid.innerHTML="";(d.sports||[]).forEach(function(s){
+      var b=D.createElement("span");b.className="kb-badge kb-badge-blue";b.textContent=s.replace(/_/g," ").toUpperCase();sGrid.appendChild(b);
+    });if(!(d.sports||[]).length)sGrid.innerHTML='<span class="kb-badge kb-badge-dim">None configured</span>'}
+
+    var cred=d.odds_requests_remaining,credEl=$("oddsCredits");
+    if(cred!=null){
+      credEl.innerHTML=esc(String(cred))+' <small>left</small>';
+      var cn=parseInt(cred,10);
+      credEl.className="stat-val"+(cn<20?" neg":cn<100?" pos":"");
+    } else{credEl.innerHTML="— <small>left</small>"}
+
+    var pnl=d.pnl?d.pnl.total_realized_pnl:0;
+    $("pnlTotal").textContent=fmtMoney(pnl);$("pnlTotal").className="stat-val"+(pnl>0?" pos":pnl<0?" neg":"");
+    $("hPnl").textContent=fmtMoney(pnl);$("hPnl").className="qstat-val"+(pnl>0?" pos-green":pnl<0?" pos-red":"");
+    $("pnlSub").textContent=(d.pnl?d.pnl.winning_count:0)+"W / "+(d.pnl?d.pnl.losing_count:0)+"L";
+    $("openCt").textContent=String(d.pnl?d.pnl.open_count:0);
+    $("settledCt").textContent=String(d.pnl?d.pnl.settled_count:0);
+
+    var sc=d.scan_count||0;
+    if(sc!==prevScanCount&&sc>0){
+      scanHist.push({opps:(d.opportunities||[]).length,label:fmtTime(d.last_scan_iso||new Date().toISOString()),err:!!hasErr});
+      if(scanHist.length>24)scanHist.shift();
+      prevScanCount=sc;
+    }
+    renderOpps(d);renderPositions(d);
+    if($("page-scanner").classList.contains("active")){drawScanChart();drawEdgeChart()}
+  }catch(e){
+    var b=$("errBanner");if(b){b.className="kb-banner err";$("errText").textContent="Dashboard error: "+e.message}
+  }
+}
+
+async function loadHealth(){
+  try{var r=await fetch("/api/health");if(r.ok){renderHealth(await r.json())}}catch(e){}
+}
+
+async function loadConfig(){
+  try{var r=await fetch("/api/config");if(r.ok){renderSettings(await r.json())}}catch(e){}
+}
+
+/* ── Execute ────────────────────────────────────── */
+async function doExec(index,dryRun){
+  var inp=$("cShares-"+index),shares=inp?parseInt(inp.value,10)||100:100;
+  try{
+    var r=await fetch("/api/execute",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({index:index,shares:shares,dry_run:dryRun})});
+    var j=await r.json().catch(function(){return{}});
+    if(!r.ok){toast("Execute failed: "+(j.detail||r.statusText),"error");return}
+    toast(dryRun?"Dry run OK — "+shares+" shares @ est $"+j.cost_dollars:"Order placed: "+shares+" shares",dryRun?"info":"success");
+    addLog((dryRun?"Dry run":"Executed")+" #"+index+" ×"+shares,dryRun?"info":"ok");
+    openConfirmIdx=-1;loadState();
+  }catch(e){toast("Network error: "+e.message,"error")}
+}
+
+/* ── Button handlers ────────────────────────────── */
+function makeScanHandler(btn,spin){
+  return async function(){
+    btn.disabled=true;if(spin)spin.style.display="inline-block";
+    try{
+      var r=await fetch("/api/scan",{method:"POST"});var j=await r.json();
+      if(j.ok){toast("Scan complete — "+j.alerts+" new alerts","success");addLog("Manual scan: "+j.alerts+" alerts","ok")}
+      else{toast("Scan: "+(j.error||"Error"),"error");addLog("Scan error: "+(j.error||""),"err")}
+    }catch(e){toast("Scan failed: "+e.message,"error");addLog("Scan failed","err")}
+    finally{btn.disabled=false;if(spin)spin.style.display="none";nextIn=pollSec;loadState();loadHealth()}
+  };
+}
+$("btnScan").addEventListener("click",makeScanHandler($("btnScan"),$("scanSpin")));
+$("heroScanBtn").addEventListener("click",makeScanHandler($("heroScanBtn"),$("heroScanSpin")));
+
+$("btnMap").addEventListener("click",async function(){
+  var btn=$("btnMap"),sp=$("mapSpin");btn.disabled=true;sp.style.display="inline-block";
+  try{
+    var r=await fetch("/api/auto-map",{method:"POST"});var j=await r.json();
+    if(j.ok){toast("Mapped "+j.mapped+" markets","success");addLog("Re-mapped: "+j.mapped+" markets","ok")}
+    else{toast("Map: "+(j.error||"Error"),"error");addLog("Map error: "+(j.error||""),"err")}
+  }catch(e){toast("Map failed: "+e.message,"error");addLog("Map failed","err")}
+  finally{btn.disabled=false;sp.style.display="none";loadState();loadHealth()}
+});
+
+/* ── Polling ────────────────────────────────────── */
+setInterval(function(){
+  nextIn--;
+  if(nextIn<=0){nextIn=pollSec;loadState();loadHealth()}
+  $("countdown").textContent="Next scan in "+Math.max(0,nextIn)+"s";
+},1000);
+
+/* ── Init ───────────────────────────────────────── */
+loadState();loadHealth();loadConfig();
+window.addEventListener("resize",function(){if(scanChartInst)scanChartInst.render();if(edgeChartInst)edgeChartInst.render()});
+
+})();
+</script>
 </body>
 </html>

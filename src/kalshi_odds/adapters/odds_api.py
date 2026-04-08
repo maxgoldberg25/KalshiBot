@@ -25,6 +25,14 @@ from tenacity import (
 from kalshi_odds.models.odds import OddsQuote, OddsFormat, MarketType
 
 
+class OddsAPIError(Exception):
+    """Raised for non-retryable Odds API errors (auth, quota, rate limit)."""
+
+
+class OddsAPIQuotaError(OddsAPIError):
+    """Raised when the free-tier usage quota is exhausted."""
+
+
 class OddsAPIAdapter:
     """
     The Odds API adapter for fetching sportsbook odds.
@@ -66,19 +74,28 @@ class OddsAPIAdapter:
         self._last_request_time = time.monotonic()
 
     @retry(
-        retry=retry_if_exception_type((httpx.HTTPStatusError, httpx.ConnectError)),
+        retry=retry_if_exception_type(httpx.ConnectError),
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
     )
     async def _get(self, path: str, params: Optional[dict] = None) -> dict | list:
         assert self._client is not None
         await self._throttle()
-        
+
         params = params or {}
         params["apiKey"] = self._api_key
-        
+
         resp = await self._client.get(path, params=params)
         self._last_requests_remaining = resp.headers.get("x-requests-remaining")
+        if resp.status_code == 401:
+            body = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
+            msg = body.get("message", "Unauthorized")
+            code = body.get("error_code", "")
+            if "OUT_OF_USAGE_CREDITS" in code or "quota" in msg.lower():
+                raise OddsAPIQuotaError(f"Odds API quota exhausted (0 credits remaining). Get a new key or wait for monthly reset at https://the-odds-api.com")
+            raise OddsAPIError(f"Odds API auth failed: {msg}")
+        if resp.status_code == 429:
+            raise OddsAPIError("Odds API rate limit hit. Try again later.")
         resp.raise_for_status()
         return resp.json()
 

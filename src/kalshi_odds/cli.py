@@ -15,9 +15,10 @@ from rich.table import Table
 from kalshi_odds.config import get_settings
 from kalshi_odds.adapters.kalshi import KalshiAdapter
 from kalshi_odds.adapters.odds_api import OddsAPIAdapter
+from kalshi_odds.adapters.odds_provider import create_odds_provider
 from kalshi_odds.core.automapper import auto_map as run_auto_map
 from kalshi_odds.core.matcher import MarketMatcher
-from kalshi_odds.core.scan_runner import run_scan_cycle
+from kalshi_odds.core.scan_runner import run_scan_cycle, run_multi_sport_scan
 from kalshi_odds.core.scanner import Scanner
 from kalshi_odds.core.sizing import kelly_shares
 from kalshi_odds.db import Repository
@@ -276,56 +277,65 @@ def scan(
 ) -> None:
     """One-shot scan: fetch, compare, display ranked opportunities, and exit."""
     settings = get_settings()
-    sport = sport or settings.default_sport
+    sports = [sport] if sport else settings.sport_list
     do_auto_map = auto_map if auto_map is not None else settings.auto_map_enabled
     if not settings.kalshi_configured:
         console.print("[red]✗ Kalshi not configured[/]")
         raise typer.Exit(1)
     if not settings.odds_api_configured:
-        console.print("[red]✗ The Odds API not configured[/]")
+        console.print("[red]✗ Odds API not configured (set KALSHI_ODDS_ODDS_API_KEY or KALSHI_ODDS_ODDSPAPI_API_KEY)[/]")
         raise typer.Exit(1)
 
     async def _run():
+        odds_api = create_odds_provider(settings)
         async with (
             KalshiAdapter(
                 api_key_id=settings.kalshi_api_key_id,
                 private_key_path=settings.kalshi_private_key_path,
             ) as kalshi,
-            OddsAPIAdapter(api_key=settings.odds_api_key) as odds_api,
             Repository(settings.database_url.split("///")[-1]) as repo,
         ):
-            if do_auto_map:
-                console.print("[blue]Auto-mapping Kalshi ↔ Odds API...[/]")
-                try:
-                    mappings = await run_auto_map(
-                        kalshi, odds_api, sport, settings.mapping_path,
-                        merge_with_existing=True, write=True,
-                    )
-                    console.print(f"[green]✓[/] Mapped {len(mappings)} markets")
-                except Exception as e:
-                    console.print(f"[yellow]Auto-map failed: {e}[/]")
-            matcher = MarketMatcher(mapping_file=settings.mapping_path, fuzzy_enabled=False)
-            loaded = matcher.load_mappings()
-            if loaded == 0:
-                console.print("[yellow]⚠ No mappings found. Create mappings.yaml first.[/]")
-                return
-            scanner = Scanner(
-                kalshi_slippage_buffer=settings.kalshi_slippage_buffer,
-                sportsbook_execution_friction=settings.sportsbook_execution_friction,
-                min_edge_bps=settings.min_edge_bps,
-                min_liquidity=settings.min_liquidity,
-                max_staleness_seconds=settings.max_staleness_seconds,
-            )
-            console.print(f"[blue]Scanning {sport}...[/]")
-            all_alerts, opportunities = await run_scan_cycle(sport, matcher, scanner, kalshi, odds_api)
-            now = datetime.now(timezone.utc).strftime("%b %d %Y %I:%M%p EST")
-            console.print(f"\n[bold]KALSHI ODDS SCANNER[/]  |  [cyan]{len(opportunities)} opportunities[/]  |  {now}\n")
-            _render_opportunities_table(opportunities)
-            _save_last_opportunities(opportunities)
-            for alert in all_alerts:
-                await repo.save_alert(alert)
-                with open(settings.output_jsonl, "a") as f:
-                    f.write(alert.model_dump_json() + "\n")
+            await odds_api.connect()
+            try:
+                if do_auto_map:
+                    console.print("[blue]Auto-mapping Kalshi ↔ Odds API...[/]")
+                    for s in sports:
+                        try:
+                            mappings = await run_auto_map(
+                                kalshi, odds_api, s, settings.mapping_path,
+                                merge_with_existing=True, write=True,
+                            )
+                            console.print(f"[green]✓[/] Mapped {len(mappings)} markets for {s}")
+                        except Exception as e:
+                            console.print(f"[yellow]Auto-map failed for {s}: {e}[/]")
+                matcher = MarketMatcher(mapping_file=settings.mapping_path, fuzzy_enabled=False)
+                loaded = matcher.load_mappings()
+                if loaded == 0:
+                    console.print("[yellow]⚠ No mappings found. Create mappings.yaml first.[/]")
+                    return
+                scanner = Scanner(
+                    kalshi_slippage_buffer=settings.kalshi_slippage_buffer,
+                    sportsbook_execution_friction=settings.sportsbook_execution_friction,
+                    min_edge_bps=settings.min_edge_bps,
+                    min_liquidity=settings.min_liquidity,
+                    max_staleness_seconds=settings.max_staleness_seconds,
+                )
+                sports_label = ", ".join(sports)
+                console.print(f"[blue]Scanning {sports_label}...[/]")
+                if len(sports) > 1:
+                    all_alerts, opportunities = await run_multi_sport_scan(sports, matcher, scanner, kalshi, odds_api)
+                else:
+                    all_alerts, opportunities = await run_scan_cycle(sports[0], matcher, scanner, kalshi, odds_api)
+                now = datetime.now(timezone.utc).strftime("%b %d %Y %I:%M%p EST")
+                console.print(f"\n[bold]KALSHI ODDS SCANNER[/]  |  [cyan]{len(opportunities)} opportunities[/]  |  {now}\n")
+                _render_opportunities_table(opportunities)
+                _save_last_opportunities(opportunities)
+                for alert in all_alerts:
+                    await repo.save_alert(alert)
+                    with open(settings.output_jsonl, "a") as f:
+                        f.write(alert.model_dump_json() + "\n")
+            finally:
+                await odds_api.close()
 
     asyncio.run(_run())
 
@@ -338,7 +348,7 @@ def run(
 ) -> None:
     """Start continuous scanner loop (alerts only)."""
     settings = get_settings()
-    sport = sport or settings.default_sport
+    sports = [sport] if sport else settings.sport_list
     do_auto_map = auto_map if auto_map is not None else settings.auto_map_enabled
     if interval:
         settings.poll_interval_seconds = interval or 60.0
@@ -348,65 +358,73 @@ def run(
         console.print("[red]✗ Kalshi not configured[/]")
         raise typer.Exit(1)
     if not settings.odds_api_configured:
-        console.print("[red]✗ The Odds API not configured[/]")
+        console.print("[red]✗ Odds API not configured (set KALSHI_ODDS_ODDS_API_KEY or KALSHI_ODDS_ODDSPAPI_API_KEY)[/]")
         raise typer.Exit(1)
     console.print("[green]Starting scanner (alert-only mode)...[/]")
 
     async def _run():
+        odds_api = create_odds_provider(settings)
         async with (
             KalshiAdapter(
                 api_key_id=settings.kalshi_api_key_id,
                 private_key_path=settings.kalshi_private_key_path,
             ) as kalshi,
-            OddsAPIAdapter(api_key=settings.odds_api_key) as odds_api,
             Repository(settings.database_url.split("///")[-1]) as repo,
         ):
-            if do_auto_map:
-                console.print("[blue]Auto-mapping Kalshi ↔ Odds API...[/]")
-                try:
-                    mappings = await run_auto_map(
-                        kalshi, odds_api, sport, settings.mapping_path,
-                        merge_with_existing=True, write=True,
-                    )
-                    console.print(f"[green]✓[/] Mapped {len(mappings)} markets")
-                except Exception as e:
-                    console.print(f"[yellow]Auto-map failed: {e}[/]")
-            matcher = MarketMatcher(mapping_file=settings.mapping_path, fuzzy_enabled=False)
-            loaded = matcher.load_mappings()
-            console.print(f"[blue]Loaded {loaded} market mappings[/]")
-            if loaded == 0:
-                console.print("[yellow]⚠ No mappings found. Create mappings.yaml first.[/]")
-                return
-            scanner = Scanner(
-                kalshi_slippage_buffer=settings.kalshi_slippage_buffer,
-                sportsbook_execution_friction=settings.sportsbook_execution_friction,
-                min_edge_bps=settings.min_edge_bps,
-                min_liquidity=settings.min_liquidity,
-                max_staleness_seconds=settings.max_staleness_seconds,
-            )
-            while True:
-                try:
-                    console.print(f"[dim]Scanning at [cyan]NOW[/]...[/]")
-                    all_alerts, opportunities = await run_scan_cycle(sport, matcher, scanner, kalshi, odds_api)
-                    if opportunities:
-                        now = datetime.now(timezone.utc).strftime("%b %d %Y %I:%M%p EST")
-                        console.print(f"\n[bold]KALSHI ODDS SCANNER[/]  |  [cyan]{len(opportunities)} opportunities[/]  |  {now}\n")
-                        _render_opportunities_table(opportunities)
-                        _save_last_opportunities(opportunities)
-                        await _maybe_auto_execute(opportunities, settings, repo)
-                        for alert in all_alerts:
-                            await repo.save_alert(alert)
-                            with open(settings.output_jsonl, "a") as f:
-                                f.write(alert.model_dump_json() + "\n")
-                    else:
-                        console.print("[dim]No opportunities[/]")
-                    await asyncio.sleep(settings.poll_interval_seconds)
-                except KeyboardInterrupt:
-                    console.print("\n[yellow]Stopped by user[/]")
-                    break
-                except Exception as e:
-                    console.print(f"[red]Error: {e}[/]")
-                    await asyncio.sleep(10)
+            await odds_api.connect()
+            try:
+                if do_auto_map:
+                    console.print("[blue]Auto-mapping Kalshi ↔ Odds API...[/]")
+                    for s in sports:
+                        try:
+                            mappings = await run_auto_map(
+                                kalshi, odds_api, s, settings.mapping_path,
+                                merge_with_existing=True, write=True,
+                            )
+                            console.print(f"[green]✓[/] Mapped {len(mappings)} markets for {s}")
+                        except Exception as e:
+                            console.print(f"[yellow]Auto-map failed for {s}: {e}[/]")
+                matcher = MarketMatcher(mapping_file=settings.mapping_path, fuzzy_enabled=False)
+                loaded = matcher.load_mappings()
+                console.print(f"[blue]Loaded {loaded} market mappings[/]")
+                if loaded == 0:
+                    console.print("[yellow]⚠ No mappings found. Create mappings.yaml first.[/]")
+                    return
+                scanner = Scanner(
+                    kalshi_slippage_buffer=settings.kalshi_slippage_buffer,
+                    sportsbook_execution_friction=settings.sportsbook_execution_friction,
+                    min_edge_bps=settings.min_edge_bps,
+                    min_liquidity=settings.min_liquidity,
+                    max_staleness_seconds=settings.max_staleness_seconds,
+                )
+                while True:
+                    try:
+                        console.print(f"[dim]Scanning at [cyan]NOW[/]...[/]")
+                        if len(sports) > 1:
+                            all_alerts, opportunities = await run_multi_sport_scan(sports, matcher, scanner, kalshi, odds_api)
+                        else:
+                            all_alerts, opportunities = await run_scan_cycle(sports[0], matcher, scanner, kalshi, odds_api)
+                        if opportunities:
+                            now = datetime.now(timezone.utc).strftime("%b %d %Y %I:%M%p EST")
+                            console.print(f"\n[bold]KALSHI ODDS SCANNER[/]  |  [cyan]{len(opportunities)} opportunities[/]  |  {now}\n")
+                            _render_opportunities_table(opportunities)
+                            _save_last_opportunities(opportunities)
+                            await _maybe_auto_execute(opportunities, settings, repo)
+                            for alert in all_alerts:
+                                await repo.save_alert(alert)
+                                with open(settings.output_jsonl, "a") as f:
+                                    f.write(alert.model_dump_json() + "\n")
+                        else:
+                            console.print("[dim]No opportunities[/]")
+                        await asyncio.sleep(settings.poll_interval_seconds)
+                    except KeyboardInterrupt:
+                        console.print("\n[yellow]Stopped by user[/]")
+                        break
+                    except Exception as e:
+                        console.print(f"[red]Error: {e}[/]")
+                        await asyncio.sleep(10)
+            finally:
+                await odds_api.close()
 
     try:
         asyncio.run(_run())

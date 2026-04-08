@@ -1,337 +1,481 @@
 markets:
-- market_key: superbowl_2026_seahawks
+- market_key: nba_20260410_cleatl_cle
   kalshi:
-    contract_id: KXSB-26-SEA
+    contract_id: KXNBAGAME-26APR10CLEATL-CLE
     side: 'YES'
   odds:
-    event_id: b64e3587d7a4cf01a568e7150a2a1aec
-    market_type: h2h
-    selection: Seattle Seahawks
-- market_key: superbowl_2026_patriots
-  kalshi:
-    contract_id: KXSB-26-NE
-    side: 'YES'
-  odds:
-    event_id: b64e3587d7a4cf01a568e7150a2a1aec
-    market_type: h2h
-    selection: New England Patriots
-- market_key: nba_20260207_wizards_nets_bkn
-  kalshi:
-    contract_id: KXNBAGAME-26FEB07WASBKN-BKN
-    side: 'YES'
-  odds:
-    event_id: b321b271a38a3a225bb32d4cda89c2ca
-    market_type: h2h
-    selection: Brooklyn Nets
-- market_key: nba_20260207_wizards_nets_was
-  kalshi:
-    contract_id: KXNBAGAME-26FEB07WASBKN-WAS
-    side: 'YES'
-  odds:
-    event_id: b321b271a38a3a225bb32d4cda89c2ca
-    market_type: h2h
-    selection: Washington Wizards
-- market_key: nba_20260208_nykbos_nyk
-  kalshi:
-    contract_id: KXNBAGAME-26FEB08NYKBOS-NYK
-    side: 'YES'
-  odds:
-    event_id: c2aacc97e9c2f14777db6a947e5b0772
-    market_type: h2h
-    selection: New York Knicks
-- market_key: nba_20260208_nykbos_bos
-  kalshi:
-    contract_id: KXNBAGAME-26FEB08NYKBOS-BOS
-    side: 'YES'
-  odds:
-    event_id: c2aacc97e9c2f14777db6a947e5b0772
-    market_type: h2h
-    selection: Boston Celtics
-- market_key: nba_20260207_gswlal_lal
-  kalshi:
-    contract_id: KXNBAGAME-26FEB07GSWLAL-LAL
-    side: 'YES'
-  odds:
-    event_id: 076f5eadf0573f4dd2ace4f26ae28ef2
-    market_type: h2h
-    selection: Los Angeles Lakers
-- market_key: nba_20260207_gswlal_gsw
-  kalshi:
-    contract_id: KXNBAGAME-26FEB07GSWLAL-GSW
-    side: 'YES'
-  odds:
-    event_id: 076f5eadf0573f4dd2ace4f26ae28ef2
-    market_type: h2h
-    selection: Golden State Warriors
-- market_key: nba_20260207_clesac_sac
-  kalshi:
-    contract_id: KXNBAGAME-26FEB07CLESAC-SAC
-    side: 'YES'
-  odds:
-    event_id: 7b28a8f5733ef01c824181e1b5a42341
-    market_type: h2h
-    selection: Sacramento Kings
-- market_key: nba_20260207_clesac_cle
-  kalshi:
-    contract_id: KXNBAGAME-26FEB07CLESAC-CLE
-    side: 'YES'
-  odds:
-    event_id: 7b28a8f5733ef01c824181e1b5a42341
+    event_id: 3fe42fd427985fed1fee7c2e58935a67
     market_type: h2h
     selection: Cleveland Cavaliers
-- market_key: nba_20260207_mempor_por
+- market_key: nba_20260410_cleatl_atl
   kalshi:
-    contract_id: KXNBAGAME-26FEB07MEMPOR-POR
+    contract_id: KXNBAGAME-26APR10CLEATL-ATL
     side: 'YES'
   odds:
-    event_id: e4c99c288d8e1b1baf8bd7af1678ddb5
-    market_type: h2h
-    selection: Portland Trail Blazers
-- market_key: nba_20260207_mempor_mem
-  kalshi:
-    contract_id: KXNBAGAME-26FEB07MEMPOR-MEM
-    side: 'YES'
-  odds:
-    event_id: e4c99c288d8e1b1baf8bd7af1678ddb5
-    market_type: h2h
-    selection: Memphis Grizzlies
-- market_key: nba_20260207_phiphx_phx
-  kalshi:
-    contract_id: KXNBAGAME-26FEB07PHIPHX-PHX
-    side: 'YES'
-  odds:
-    event_id: a809adbd88558364e25c834bbb5a88f0
-    market_type: h2h
-    selection: Phoenix Suns
-- market_key: nba_20260207_phiphx_phi
-  kalshi:
-    contract_id: KXNBAGAME-26FEB07PHIPHX-PHI
-    side: 'YES'
-  odds:
-    event_id: a809adbd88558364e25c834bbb5a88f0
-    market_type: h2h
-    selection: Philadelphia 76ers
-- market_key: nba_20260207_denchi_den
-  kalshi:
-    contract_id: KXNBAGAME-26FEB07DENCHI-DEN
-    side: 'YES'
-  odds:
-    event_id: e9a14346272a3fc89154cc1bf1c5da1b
-    market_type: h2h
-    selection: Denver Nuggets
-- market_key: nba_20260207_denchi_chi
-  kalshi:
-    contract_id: KXNBAGAME-26FEB07DENCHI-CHI
-    side: 'YES'
-  odds:
-    event_id: e9a14346272a3fc89154cc1bf1c5da1b
-    market_type: h2h
-    selection: Chicago Bulls
-- market_key: nba_20260207_chaatl_cha
-  kalshi:
-    contract_id: KXNBAGAME-26FEB07CHAATL-CHA
-    side: 'YES'
-  odds:
-    event_id: 05cf7fd60949a0c52340284b261ae851
-    market_type: h2h
-    selection: Charlotte Hornets
-- market_key: nba_20260207_chaatl_atl
-  kalshi:
-    contract_id: KXNBAGAME-26FEB07CHAATL-ATL
-    side: 'YES'
-  odds:
-    event_id: 05cf7fd60949a0c52340284b261ae851
+    event_id: 3fe42fd427985fed1fee7c2e58935a67
     market_type: h2h
     selection: Atlanta Hawks
-- market_key: nba_20260207_utaorl_uta
+- market_key: nba_20260408_dalphx_phx
   kalshi:
-    contract_id: KXNBAGAME-26FEB07UTAORL-UTA
+    contract_id: KXNBAGAME-26APR08DALPHX-PHX
     side: 'YES'
   odds:
-    event_id: a54af649958eb60284f57114fdeeb472
+    event_id: 3e95057b94b2d930c8cc201db634eaf8
     market_type: h2h
-    selection: Utah Jazz
-- market_key: nba_20260207_utaorl_orl
+    selection: Phoenix Suns
+- market_key: nba_20260408_dalphx_dal
   kalshi:
-    contract_id: KXNBAGAME-26FEB07UTAORL-ORL
+    contract_id: KXNBAGAME-26APR08DALPHX-DAL
     side: 'YES'
   odds:
-    event_id: a54af649958eb60284f57114fdeeb472
-    market_type: h2h
-    selection: Orlando Magic
-- market_key: nba_20260207_dalsas_sas
-  kalshi:
-    contract_id: KXNBAGAME-26FEB07DALSAS-SAS
-    side: 'YES'
-  odds:
-    event_id: b69d85cac76c01181ada3299bc50ed54
-    market_type: h2h
-    selection: San Antonio Spurs
-- market_key: nba_20260207_dalsas_dal
-  kalshi:
-    contract_id: KXNBAGAME-26FEB07DALSAS-DAL
-    side: 'YES'
-  odds:
-    event_id: b69d85cac76c01181ada3299bc50ed54
+    event_id: 3e95057b94b2d930c8cc201db634eaf8
     market_type: h2h
     selection: Dallas Mavericks
-- market_key: nba_20260207_houokc_okc
+- market_key: nba_20260408_porsas_sas
   kalshi:
-    contract_id: KXNBAGAME-26FEB07HOUOKC-OKC
+    contract_id: KXNBAGAME-26APR08PORSAS-SAS
     side: 'YES'
   odds:
-    event_id: 734128222c2a03269132090adb3c593d
+    event_id: 08c9fd2b6b80f1f763e2c2eb3e935208
     market_type: h2h
-    selection: Oklahoma City Thunder
-- market_key: nba_20260207_houokc_hou
+    selection: San Antonio Spurs
+- market_key: nba_20260408_porsas_por
   kalshi:
-    contract_id: KXNBAGAME-26FEB07HOUOKC-HOU
+    contract_id: KXNBAGAME-26APR08PORSAS-POR
     side: 'YES'
   odds:
-    event_id: 734128222c2a03269132090adb3c593d
+    event_id: 08c9fd2b6b80f1f763e2c2eb3e935208
     market_type: h2h
-    selection: Houston Rockets
-- market_key: nba_20260329_gswden_gsw
+    selection: Portland Trail Blazers
+- market_key: nba_20260408_memden_mem
   kalshi:
-    contract_id: KXNBAGAME-26MAR29GSWDEN-GSW
+    contract_id: KXNBAGAME-26APR08MEMDEN-MEM
     side: 'YES'
   odds:
-    event_id: 976eb35602aca3acd738ec2621478695
-    market_type: h2h
-    selection: Golden State Warriors
-- market_key: nba_20260329_gswden_den
-  kalshi:
-    contract_id: KXNBAGAME-26MAR29GSWDEN-DEN
-    side: 'YES'
-  odds:
-    event_id: 976eb35602aca3acd738ec2621478695
-    market_type: h2h
-    selection: Denver Nuggets
-- market_key: nba_20260329_nykokc_okc
-  kalshi:
-    contract_id: KXNBAGAME-26MAR29NYKOKC-OKC
-    side: 'YES'
-  odds:
-    event_id: f1fe04fb5d59dc4d3b310d56b74a9f2a
-    market_type: h2h
-    selection: Oklahoma City Thunder
-- market_key: nba_20260329_nykokc_nyk
-  kalshi:
-    contract_id: KXNBAGAME-26MAR29NYKOKC-NYK
-    side: 'YES'
-  odds:
-    event_id: f1fe04fb5d59dc4d3b310d56b74a9f2a
-    market_type: h2h
-    selection: New York Knicks
-- market_key: nba_20260329_boscha_cha
-  kalshi:
-    contract_id: KXNBAGAME-26MAR29BOSCHA-CHA
-    side: 'YES'
-  odds:
-    event_id: 8d6b8b25d9790bf08a65761a3d63b611
-    market_type: h2h
-    selection: Charlotte Hornets
-- market_key: nba_20260329_boscha_bos
-  kalshi:
-    contract_id: KXNBAGAME-26MAR29BOSCHA-BOS
-    side: 'YES'
-  odds:
-    event_id: 8d6b8b25d9790bf08a65761a3d63b611
-    market_type: h2h
-    selection: Boston Celtics
-- market_key: nba_20260329_orltor_tor
-  kalshi:
-    contract_id: KXNBAGAME-26MAR29ORLTOR-TOR
-    side: 'YES'
-  odds:
-    event_id: 4d3b276afc5789fb4a6564eee411bfa9
-    market_type: h2h
-    selection: Toronto Raptors
-- market_key: nba_20260329_orltor_orl
-  kalshi:
-    contract_id: KXNBAGAME-26MAR29ORLTOR-ORL
-    side: 'YES'
-  odds:
-    event_id: 4d3b276afc5789fb4a6564eee411bfa9
-    market_type: h2h
-    selection: Orlando Magic
-- market_key: nba_20260328_sacatl_sac
-  kalshi:
-    contract_id: KXNBAGAME-26MAR28SACATL-SAC
-    side: 'YES'
-  odds:
-    event_id: d7a3bd092d17e72cfe007b92fc74dd1f
-    market_type: h2h
-    selection: Sacramento Kings
-- market_key: nba_20260328_sacatl_atl
-  kalshi:
-    contract_id: KXNBAGAME-26MAR28SACATL-ATL
-    side: 'YES'
-  odds:
-    event_id: d7a3bd092d17e72cfe007b92fc74dd1f
-    market_type: h2h
-    selection: Atlanta Hawks
-- market_key: nba_20260328_chimem_mem
-  kalshi:
-    contract_id: KXNBAGAME-26MAR28CHIMEM-MEM
-    side: 'YES'
-  odds:
-    event_id: df362c645ce96c954aeec281f1951a22
+    event_id: 41c07b1937b8a59703253dc470ca4ddb
     market_type: h2h
     selection: Memphis Grizzlies
-- market_key: nba_20260328_chimem_chi
+- market_key: nba_20260408_memden_den
   kalshi:
-    contract_id: KXNBAGAME-26MAR28CHIMEM-CHI
+    contract_id: KXNBAGAME-26APR08MEMDEN-DEN
     side: 'YES'
   odds:
-    event_id: df362c645ce96c954aeec281f1951a22
+    event_id: 41c07b1937b8a59703253dc470ca4ddb
     market_type: h2h
-    selection: Chicago Bulls
-- market_key: nba_20260328_utaphx_uta
+    selection: Denver Nuggets
+- market_key: nba_20260408_mildet_mil
   kalshi:
-    contract_id: KXNBAGAME-26MAR28UTAPHX-UTA
+    contract_id: KXNBAGAME-26APR08MILDET-MIL
     side: 'YES'
   odds:
-    event_id: 6ddf73112fefbe7dcb275c09ebdae6a6
+    event_id: c14b4c18b6b1e91a53302fdcc32910f2
     market_type: h2h
-    selection: Utah Jazz
-- market_key: nba_20260328_utaphx_phx
+    selection: Milwaukee Bucks
+- market_key: nba_20260408_mildet_det
   kalshi:
-    contract_id: KXNBAGAME-26MAR28UTAPHX-PHX
+    contract_id: KXNBAGAME-26APR08MILDET-DET
     side: 'YES'
   odds:
-    event_id: 6ddf73112fefbe7dcb275c09ebdae6a6
-    market_type: h2h
-    selection: Phoenix Suns
-- market_key: nba_20260328_phicha_phi
-  kalshi:
-    contract_id: KXNBAGAME-26MAR28PHICHA-PHI
-    side: 'YES'
-  odds:
-    event_id: def835f85134dff31d0e29a14591d960
-    market_type: h2h
-    selection: Philadelphia 76ers
-- market_key: nba_20260328_phicha_cha
-  kalshi:
-    contract_id: KXNBAGAME-26MAR28PHICHA-CHA
-    side: 'YES'
-  odds:
-    event_id: def835f85134dff31d0e29a14591d960
-    market_type: h2h
-    selection: Charlotte Hornets
-- market_key: nba_20260328_detmin_min
-  kalshi:
-    contract_id: KXNBAGAME-26MAR28DETMIN-MIN
-    side: 'YES'
-  odds:
-    event_id: 2f64bcd6f06f9cb1132a6be530d6848c
-    market_type: h2h
-    selection: Minnesota Timberwolves
-- market_key: nba_20260328_detmin_det
-  kalshi:
-    contract_id: KXNBAGAME-26MAR28DETMIN-DET
-    side: 'YES'
-  odds:
-    event_id: 2f64bcd6f06f9cb1132a6be530d6848c
+    event_id: c14b4c18b6b1e91a53302fdcc32910f2
     market_type: h2h
     selection: Detroit Pistons
+- market_key: nba_20260408_minorl_orl
+  kalshi:
+    contract_id: KXNBAGAME-26APR08MINORL-ORL
+    side: 'YES'
+  odds:
+    event_id: cc5e682d9f44baa1c9d41eb3fd1c89b0
+    market_type: h2h
+    selection: Orlando Magic
+- market_key: nba_20260408_minorl_min
+  kalshi:
+    contract_id: KXNBAGAME-26APR08MINORL-MIN
+    side: 'YES'
+  odds:
+    event_id: cc5e682d9f44baa1c9d41eb3fd1c89b0
+    market_type: h2h
+    selection: Minnesota Timberwolves
+- market_key: nba_20260408_atlcle_cle
+  kalshi:
+    contract_id: KXNBAGAME-26APR08ATLCLE-CLE
+    side: 'YES'
+  odds:
+    event_id: 3fe42fd427985fed1fee7c2e58935a67
+    market_type: h2h
+    selection: Cleveland Cavaliers
+- market_key: nba_20260408_atlcle_atl
+  kalshi:
+    contract_id: KXNBAGAME-26APR08ATLCLE-ATL
+    side: 'YES'
+  odds:
+    event_id: 3fe42fd427985fed1fee7c2e58935a67
+    market_type: h2h
+    selection: Atlanta Hawks
+- market_key: mlb_20260410_2140colsd_sd
+  kalshi:
+    contract_id: KXMLBGAME-26APR102140COLSD-SD
+    side: 'YES'
+  odds:
+    event_id: 7d89d3d30b7d4078b13216eb9fb387d2
+    market_type: h2h
+    selection: San Diego Padres
+- market_key: mlb_20260410_2140colsd_col
+  kalshi:
+    contract_id: KXMLBGAME-26APR102140COLSD-COL
+    side: 'YES'
+  odds:
+    event_id: 7d89d3d30b7d4078b13216eb9fb387d2
+    market_type: h2h
+    selection: Colorado Rockies
+- market_key: mlb_20260410_1940cwskc_kc
+  kalshi:
+    contract_id: KXMLBGAME-26APR101940CWSKC-KC
+    side: 'YES'
+  odds:
+    event_id: eef70c714ae56d35f8173ff025e0e8bd
+    market_type: h2h
+    selection: Kansas City Royals
+- market_key: mlb_20260410_1940cwskc_cws
+  kalshi:
+    contract_id: KXMLBGAME-26APR101940CWSKC-CWS
+    side: 'YES'
+  odds:
+    event_id: eef70c714ae56d35f8173ff025e0e8bd
+    market_type: h2h
+    selection: Chicago White Sox
+- market_key: mlb_20260409_2140colsd_sd
+  kalshi:
+    contract_id: KXMLBGAME-26APR092140COLSD-SD
+    side: 'YES'
+  odds:
+    event_id: 7d89d3d30b7d4078b13216eb9fb387d2
+    market_type: h2h
+    selection: San Diego Padres
+- market_key: mlb_20260409_2140colsd_col
+  kalshi:
+    contract_id: KXMLBGAME-26APR092140COLSD-COL
+    side: 'YES'
+  odds:
+    event_id: 7d89d3d30b7d4078b13216eb9fb387d2
+    market_type: h2h
+    selection: Colorado Rockies
+- market_key: mlb_20260409_1940cwskc_kc
+  kalshi:
+    contract_id: KXMLBGAME-26APR091940CWSKC-KC
+    side: 'YES'
+  odds:
+    event_id: eef70c714ae56d35f8173ff025e0e8bd
+    market_type: h2h
+    selection: Kansas City Royals
+- market_key: mlb_20260409_1940cwskc_cws
+  kalshi:
+    contract_id: KXMLBGAME-26APR091940CWSKC-CWS
+    side: 'YES'
+  odds:
+    event_id: eef70c714ae56d35f8173ff025e0e8bd
+    market_type: h2h
+    selection: Chicago White Sox
+- market_key: mlb_20260409_1910aznym_nym
+  kalshi:
+    contract_id: KXMLBGAME-26APR091910AZNYM-NYM
+    side: 'YES'
+  odds:
+    event_id: a6d31fb32b9a25db695c58e6621fcd41
+    market_type: h2h
+    selection: New York Mets
+- market_key: mlb_20260409_1910aznym_az
+  kalshi:
+    contract_id: KXMLBGAME-26APR091910AZNYM-AZ
+    side: 'YES'
+  odds:
+    event_id: a6d31fb32b9a25db695c58e6621fcd41
+    market_type: h2h
+    selection: Arizona Diamondbacks
+- market_key: mlb_20260409_1335athnyy_nyy
+  kalshi:
+    contract_id: KXMLBGAME-26APR091335ATHNYY-NYY
+    side: 'YES'
+  odds:
+    event_id: b97b93f7e524bcb6df93185f3a28b91d
+    market_type: h2h
+    selection: New York Yankees
+- market_key: mlb_20260409_1335athnyy_ath
+  kalshi:
+    contract_id: KXMLBGAME-26APR091335ATHNYY-ATH
+    side: 'YES'
+  odds:
+    event_id: b97b93f7e524bcb6df93185f3a28b91d
+    market_type: h2h
+    selection: Athletics
+- market_key: mlb_20260409_1340detmin_min
+  kalshi:
+    contract_id: KXMLBGAME-26APR091340DETMIN-MIN
+    side: 'YES'
+  odds:
+    event_id: 3905b085d9465ee22fdad2d16362cd7a
+    market_type: h2h
+    selection: Minnesota Twins
+- market_key: mlb_20260409_1340detmin_det
+  kalshi:
+    contract_id: KXMLBGAME-26APR091340DETMIN-DET
+    side: 'YES'
+  odds:
+    event_id: 3905b085d9465ee22fdad2d16362cd7a
+    market_type: h2h
+    selection: Detroit Tigers
+- market_key: mlb_20260409_1210cinmia_mia
+  kalshi:
+    contract_id: KXMLBGAME-26APR091210CINMIA-MIA
+    side: 'YES'
+  odds:
+    event_id: 4ef0a953d5a2ee85f161aca8c6c49b3c
+    market_type: h2h
+    selection: Miami Marlins
+- market_key: mlb_20260409_1210cinmia_cin
+  kalshi:
+    contract_id: KXMLBGAME-26APR091210CINMIA-CIN
+    side: 'YES'
+  odds:
+    event_id: 4ef0a953d5a2ee85f161aca8c6c49b3c
+    market_type: h2h
+    selection: Cincinnati Reds
+- market_key: mlb_20260408_1940detmin_min
+  kalshi:
+    contract_id: KXMLBGAME-26APR081940DETMIN-MIN
+    side: 'YES'
+  odds:
+    event_id: 3905b085d9465ee22fdad2d16362cd7a
+    market_type: h2h
+    selection: Minnesota Twins
+- market_key: mlb_20260408_1940detmin_det
+  kalshi:
+    contract_id: KXMLBGAME-26APR081940DETMIN-DET
+    side: 'YES'
+  odds:
+    event_id: 3905b085d9465ee22fdad2d16362cd7a
+    market_type: h2h
+    selection: Detroit Tigers
+- market_key: mlb_20260408_1905athnyy_nyy
+  kalshi:
+    contract_id: KXMLBGAME-26APR081905ATHNYY-NYY
+    side: 'YES'
+  odds:
+    event_id: b97b93f7e524bcb6df93185f3a28b91d
+    market_type: h2h
+    selection: New York Yankees
+- market_key: mlb_20260408_1905athnyy_ath
+  kalshi:
+    contract_id: KXMLBGAME-26APR081905ATHNYY-ATH
+    side: 'YES'
+  odds:
+    event_id: b97b93f7e524bcb6df93185f3a28b91d
+    market_type: h2h
+    selection: Athletics
+- market_key: mlb_20260408_1910aznym_nym
+  kalshi:
+    contract_id: KXMLBGAME-26APR081910AZNYM-NYM
+    side: 'YES'
+  odds:
+    event_id: a6d31fb32b9a25db695c58e6621fcd41
+    market_type: h2h
+    selection: New York Mets
+- market_key: mlb_20260408_1910aznym_az
+  kalshi:
+    contract_id: KXMLBGAME-26APR081910AZNYM-AZ
+    side: 'YES'
+  odds:
+    event_id: a6d31fb32b9a25db695c58e6621fcd41
+    market_type: h2h
+    selection: Arizona Diamondbacks
+- market_key: mlb_20260408_1840cinmia_mia
+  kalshi:
+    contract_id: KXMLBGAME-26APR081840CINMIA-MIA
+    side: 'YES'
+  odds:
+    event_id: 4ef0a953d5a2ee85f161aca8c6c49b3c
+    market_type: h2h
+    selection: Miami Marlins
+- market_key: mlb_20260408_1840cinmia_cin
+  kalshi:
+    contract_id: KXMLBGAME-26APR081840CINMIA-CIN
+    side: 'YES'
+  odds:
+    event_id: 4ef0a953d5a2ee85f161aca8c6c49b3c
+    market_type: h2h
+    selection: Cincinnati Reds
+- market_key: mlb_20260408_1840chctb_tb
+  kalshi:
+    contract_id: KXMLBGAME-26APR081840CHCTB-TB
+    side: 'YES'
+  odds:
+    event_id: 2f7d7c64bfe4e6ab5864b9f70ae4ba1a
+    market_type: h2h
+    selection: Tampa Bay Rays
+- market_key: mlb_20260408_1840chctb_chc
+  kalshi:
+    contract_id: KXMLBGAME-26APR081840CHCTB-CHC
+    side: 'YES'
+  odds:
+    event_id: 2f7d7c64bfe4e6ab5864b9f70ae4ba1a
+    market_type: h2h
+    selection: Chicago Cubs
+- market_key: mlb_20260408_1607atllaa_laa
+  kalshi:
+    contract_id: KXMLBGAME-26APR081607ATLLAA-LAA
+    side: 'YES'
+  odds:
+    event_id: e82c967c1c766b4626e30f8560c26373
+    market_type: h2h
+    selection: Los Angeles Angels
+- market_key: mlb_20260408_1607atllaa_atl
+  kalshi:
+    contract_id: KXMLBGAME-26APR081607ATLLAA-ATL
+    side: 'YES'
+  odds:
+    event_id: e82c967c1c766b4626e30f8560c26373
+    market_type: h2h
+    selection: Atlanta Braves
+- market_key: mlb_20260408_1605stlwsh_wsh
+  kalshi:
+    contract_id: KXMLBGAME-26APR081605STLWSH-WSH
+    side: 'YES'
+  odds:
+    event_id: 9537056b3351f36946c499786e40cfa7
+    market_type: h2h
+    selection: Washington Nationals
+- market_key: mlb_20260408_1605stlwsh_stl
+  kalshi:
+    contract_id: KXMLBGAME-26APR081605STLWSH-STL
+    side: 'YES'
+  odds:
+    event_id: 9537056b3351f36946c499786e40cfa7
+    market_type: h2h
+    selection: St. Louis Cardinals
+- market_key: mlb_20260408_1545phisf_sf
+  kalshi:
+    contract_id: KXMLBGAME-26APR081545PHISF-SF
+    side: 'YES'
+  odds:
+    event_id: 74300b0d6c081e81f663475a7fbc6023
+    market_type: h2h
+    selection: San Francisco Giants
+- market_key: mlb_20260408_1545phisf_phi
+  kalshi:
+    contract_id: KXMLBGAME-26APR081545PHISF-PHI
+    side: 'YES'
+  odds:
+    event_id: 74300b0d6c081e81f663475a7fbc6023
+    market_type: h2h
+    selection: Philadelphia Phillies
+- market_key: mlb_20260408_1510houcol_hou
+  kalshi:
+    contract_id: KXMLBGAME-26APR081510HOUCOL-HOU
+    side: 'YES'
+  odds:
+    event_id: 00d50aafe35c1d5cd48cc12b8dc26bbb
+    market_type: h2h
+    selection: Houston Astros
+- market_key: mlb_20260408_1510houcol_col
+  kalshi:
+    contract_id: KXMLBGAME-26APR081510HOUCOL-COL
+    side: 'YES'
+  odds:
+    event_id: 00d50aafe35c1d5cd48cc12b8dc26bbb
+    market_type: h2h
+    selection: Colorado Rockies
+- market_key: mlb_20260408_1507ladtor_tor
+  kalshi:
+    contract_id: KXMLBGAME-26APR081507LADTOR-TOR
+    side: 'YES'
+  odds:
+    event_id: 672bd33686c333c6153712db080ee8a9
+    market_type: h2h
+    selection: Toronto Blue Jays
+- market_key: mlb_20260408_1507ladtor_lad
+  kalshi:
+    contract_id: KXMLBGAME-26APR081507LADTOR-LAD
+    side: 'YES'
+  odds:
+    event_id: 672bd33686c333c6153712db080ee8a9
+    market_type: h2h
+    selection: Los Angeles Dodgers
+- market_key: mlb_20260408_1435seatex_tex
+  kalshi:
+    contract_id: KXMLBGAME-26APR081435SEATEX-TEX
+    side: 'YES'
+  odds:
+    event_id: 3096b597fdfee7ae162b7e06d7b349db
+    market_type: h2h
+    selection: Texas Rangers
+- market_key: mlb_20260408_1435seatex_sea
+  kalshi:
+    contract_id: KXMLBGAME-26APR081435SEATEX-SEA
+    side: 'YES'
+  odds:
+    event_id: 3096b597fdfee7ae162b7e06d7b349db
+    market_type: h2h
+    selection: Seattle Mariners
+- market_key: mlb_20260408_1410balcws_cws
+  kalshi:
+    contract_id: KXMLBGAME-26APR081410BALCWS-CWS
+    side: 'YES'
+  odds:
+    event_id: 15b87c6f572dbd799229c124977cd9cc
+    market_type: h2h
+    selection: Chicago White Sox
+- market_key: mlb_20260408_1410balcws_bal
+  kalshi:
+    contract_id: KXMLBGAME-26APR081410BALCWS-BAL
+    side: 'YES'
+  odds:
+    event_id: 15b87c6f572dbd799229c124977cd9cc
+    market_type: h2h
+    selection: Baltimore Orioles
+- market_key: mlb_20260408_1335milbos_mil
+  kalshi:
+    contract_id: KXMLBGAME-26APR081335MILBOS-MIL
+    side: 'YES'
+  odds:
+    event_id: ed3937bc90189b707190e2ab6060520c
+    market_type: h2h
+    selection: Milwaukee Brewers
+- market_key: mlb_20260408_1335milbos_bos
+  kalshi:
+    contract_id: KXMLBGAME-26APR081335MILBOS-BOS
+    side: 'YES'
+  odds:
+    event_id: ed3937bc90189b707190e2ab6060520c
+    market_type: h2h
+    selection: Boston Red Sox
+- market_key: mlb_20260408_1310kccle_kc
+  kalshi:
+    contract_id: KXMLBGAME-26APR081310KCCLE-KC
+    side: 'YES'
+  odds:
+    event_id: 160de2c0d9ab7767e9268364d732e3a3
+    market_type: h2h
+    selection: Kansas City Royals
+- market_key: mlb_20260408_1310kccle_cle
+  kalshi:
+    contract_id: KXMLBGAME-26APR081310KCCLE-CLE
+    side: 'YES'
+  odds:
+    event_id: 160de2c0d9ab7767e9268364d732e3a3
+    market_type: h2h
+    selection: Cleveland Guardians
+- market_key: mlb_20260408_1235sdpit_sd
+  kalshi:
+    contract_id: KXMLBGAME-26APR081235SDPIT-SD
+    side: 'YES'
+  odds:
+    event_id: d52d861ea5ed462b15486ffb7493bbc4
+    market_type: h2h
+    selection: San Diego Padres
+- market_key: mlb_20260408_1235sdpit_pit
+  kalshi:
+    contract_id: KXMLBGAME-26APR081235SDPIT-PIT
+    side: 'YES'
+  odds:
+    event_id: d52d861ea5ed462b15486ffb7493bbc4
+    market_type: h2h
+    selection: Pittsburgh Pirates

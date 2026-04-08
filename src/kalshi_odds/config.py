@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     odds_api_base_url: str = Field(default="https://api.the-odds-api.com/v4")
     odds_api_requests_per_second: float = Field(default=1.0)
 
+    # ── OddsPapi (fallback) ─────────────────────────────────────────────
+    oddspapi_api_key: str = Field(default="", description="OddsPapi API key (fallback when Odds API is exhausted)")
+
     # ── Matching ────────────────────────────────────────────────────────────
     mapping_file: str = Field(default="mappings.yaml")
     fuzzy_match_enabled: bool = Field(default=False)
@@ -52,7 +55,10 @@ class Settings(BaseSettings):
     max_notional_per_trade: float = Field(default=100.0, description="Max dollars per Kalshi order when executing")
     execution_enabled: bool = Field(default=False, description="Allow execute command (must be explicitly enabled)")
     auto_map_enabled: bool = Field(default=True, description="Allow auto-mapping of games to odds events")
-    default_sport: str = Field(default="basketball_nba", description="Default sport for scan/run")
+    default_sport: str = Field(
+        default="basketball_nba",
+        description="Comma-separated sport keys for scan/run (e.g. basketball_nba,baseball_mlb)",
+    )
     bankroll_dollars: float = Field(default=500.0, description="Bankroll for Kelly sizing")
     kelly_fraction: float = Field(default=0.25, description="Fraction of full Kelly (e.g. 0.25 = quarter-Kelly)")
     dashboard_port: int = Field(default=8080, description="Port for kalshi-odds dashboard")
@@ -69,11 +75,15 @@ class Settings(BaseSettings):
 
     @property
     def odds_api_configured(self) -> bool:
-        return bool(self.odds_api_key)
+        return bool(self.odds_api_key) or bool(self.oddspapi_api_key)
 
     @property
     def mapping_path(self) -> Path:
         return Path(self.mapping_file)
+
+    @property
+    def sport_list(self) -> list[str]:
+        return [s.strip() for s in self.default_sport.split(",") if s.strip()]
 
 
 def get_settings(**overrides) -> Settings:  # type: ignore

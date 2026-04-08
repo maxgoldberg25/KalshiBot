@@ -129,3 +129,10 @@ class Opportunity(BaseModel):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     raw_alert_count: int = Field(ge=0)
     kalshi_url: str = Field(default="", description="Link to Kalshi market page")
+
+    # Signal mode: estimated opportunity with no live Kalshi orderbook
+    is_estimated: bool = Field(
+        default=False,
+        description="True when Kalshi has no active orderbook; price is synthetic at ~90% of fair value",
+    )
+    odds_source: str = Field(default="", description="Which odds provider served this opportunity")

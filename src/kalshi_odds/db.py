@@ -10,7 +10,7 @@ Stores:
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -193,13 +193,45 @@ class Repository:
             (limit,),
         )
         rows = await cursor.fetchall()
-        
+
         alerts = []
         for row in rows:
             data = json.loads(row[0])
             alerts.append(Alert(**data))
-        
+
         return alerts
+
+    async def get_last_alert_edge(self, market_key: str, direction: str) -> Optional[float]:
+        """Return edge_bps of the most recent alert for (market_key, direction), or None."""
+        assert self._conn is not None
+        cursor = await self._conn.execute(
+            """
+            SELECT edge_bps FROM alerts
+            WHERE market_key = ? AND direction = ?
+            ORDER BY timestamp DESC LIMIT 1
+            """,
+            (market_key, direction),
+        )
+        row = await cursor.fetchone()
+        return float(row[0]) if row else None
+
+    async def should_alert(self, market_key: str, direction: str, edge_bps: float, threshold_bps: float = 20.0) -> bool:
+        """True if no prior alert exists or edge changed by more than threshold_bps."""
+        last = await self.get_last_alert_edge(market_key, direction)
+        if last is None:
+            return True
+        return abs(edge_bps - last) >= threshold_bps
+
+    async def get_expired_contract_ids(self) -> set[str]:
+        """Return contract_ids whose close_time is in the past."""
+        assert self._conn is not None
+        now_iso = datetime.now(timezone.utc).isoformat()
+        cursor = await self._conn.execute(
+            "SELECT contract_id FROM kalshi_contracts WHERE close_time IS NOT NULL AND close_time < ?",
+            (now_iso,),
+        )
+        rows = await cursor.fetchall()
+        return {row[0] for row in rows}
 
     async def save_position(self, position: Position) -> int:
         """Insert a position and return its row id."""

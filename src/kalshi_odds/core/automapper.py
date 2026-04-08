@@ -22,6 +22,7 @@ SPORT_TO_SERIES: dict[str, str] = {
     "basketball_nba": "KXNBAGAME",
     "americanfootball_nfl": "KXNFLGAME",
     "basketball_ncaab": "KXNCAABGAME",
+    "baseball_mlb": "KXMLBGAME",
 }
 
 # Kalshi team code (e.g. OKC, HOU) -> keywords to match Odds API team names (substring match)
@@ -89,6 +90,36 @@ TEAM_CODE_KEYWORDS: dict[str, list[str]] = {
     "DAL": ["Dallas", "Cowboys"],
     "NYG": ["New York Giants", "Giants"],
     "WAS": ["Washington", "Commanders"],
+    # MLB
+    "AZ": ["Arizona", "Diamondbacks", "D-backs"],
+    "ATH": ["Athletics", "Oakland"],
+    "BAL": ["Baltimore", "Orioles"],
+    "BOS": ["Boston", "Red Sox"],
+    "CHC": ["Chicago Cubs", "Cubs"],
+    "CIN": ["Cincinnati", "Reds"],
+    "CLE": ["Cleveland", "Guardians"],
+    "COL": ["Colorado", "Rockies"],
+    "CWS": ["Chicago White Sox", "White Sox"],
+    "DET": ["Detroit", "Tigers"],
+    "HOU": ["Houston", "Astros"],
+    "KC": ["Kansas City", "Royals"],
+    "LAA": ["Los Angeles Angels", "Angels", "LA Angels"],
+    "LAD": ["Los Angeles Dodgers", "Dodgers", "LA Dodgers"],
+    "MIA": ["Miami", "Marlins"],
+    "MIL": ["Milwaukee", "Brewers"],
+    "MIN": ["Minnesota", "Twins"],
+    "NYM": ["New York Mets", "Mets"],
+    "NYY": ["New York Yankees", "Yankees"],
+    "PHI": ["Philadelphia", "Phillies"],
+    "PIT": ["Pittsburgh", "Pirates"],
+    "SD": ["San Diego", "Padres"],
+    "SEA": ["Seattle", "Mariners"],
+    "SF": ["San Francisco", "Giants"],
+    "STL": ["St. Louis", "Cardinals"],
+    "TB": ["Tampa Bay", "Rays"],
+    "TEX": ["Texas", "Rangers"],
+    "TOR": ["Toronto", "Blue Jays"],
+    "WSH": ["Washington", "Nationals"],
 }
 
 
@@ -126,17 +157,33 @@ def parse_kalshi_ticker(ticker: str) -> Optional[tuple[str, str, str]]:
 
 def _game_codes_from_ticker(ticker: str) -> Optional[tuple[str, str]]:
     """
-    Get the two team codes from a game ticker (e.g. HOUOKC -> (HOU, OKC)).
-    Assumes 6-char game code = two 3-letter codes.
+    Get the two team codes from a game ticker.
+
+    Uses the side code (from the ticker suffix) to determine the split point.
+    MLB tickers include a 4-digit game time that must be stripped first:
+      KXMLBGAME-26APR102210TEXLAD-TEX → game_code=2210TEXLAD → teams=TEXLAD → (TEX, LAD)
+    NBA tickers have no time prefix:
+      KXNBAGAME-26FEB07WASBKN-BKN → game_code=WASBKN → (WAS, BKN)
     """
     parsed = parse_kalshi_ticker(ticker)
     if not parsed:
         return None
-    _date, game_code, _side = parsed
-    if len(game_code) == 6:
-        return (game_code[:3], game_code[3:])
-    if len(game_code) == 4:
-        return (game_code[:2], game_code[2:])
+    _date, game_code, side = parsed
+
+    teams = re.sub(r"^\d{3,4}", "", game_code)
+    if not teams:
+        return None
+
+    tc = teams.upper()
+    su = side.upper()
+    if tc.startswith(su) and len(tc) > len(su):
+        return (su, tc[len(su):])
+    if tc.endswith(su) and len(tc) > len(su):
+        return (tc[: len(tc) - len(su)], su)
+    if len(tc) == 6:
+        return (tc[:3], tc[3:])
+    if len(tc) == 4:
+        return (tc[:2], tc[2:])
     return None
 
 
@@ -169,7 +216,14 @@ def _market_key_from_ticker(ticker: str, date_part: str, side_code: str, game_co
     else:
         year, month, day = "2026", "01", "01"
     date_str = f"{year}{month}{day}"
-    prefix = "nba" if "NBA" in ticker or "KXNBAGAME" in ticker else "nfl" if "NFL" in ticker or "KXNFLGAME" in ticker else "game"
+    if "NBA" in ticker or "KXNBAGAME" in ticker:
+        prefix = "nba"
+    elif "NFL" in ticker or "KXNFLGAME" in ticker:
+        prefix = "nfl"
+    elif "MLB" in ticker or "KXMLBGAME" in ticker:
+        prefix = "mlb"
+    else:
+        prefix = "game"
     return f"{prefix}_{date_str}_{game_code.lower()}_{side_code.lower()}"
 
 
