@@ -43,6 +43,7 @@ class OddsAPIAdapter:
         self._min_delay = 1.0 / requests_per_second
         self._last_request_time = 0.0
         self._client: Optional[httpx.AsyncClient] = None
+        self._last_requests_remaining: Optional[str] = None
 
     async def connect(self) -> None:
         """Initialize connection."""
@@ -77,8 +78,14 @@ class OddsAPIAdapter:
         params["apiKey"] = self._api_key
         
         resp = await self._client.get(path, params=params)
+        self._last_requests_remaining = resp.headers.get("x-requests-remaining")
         resp.raise_for_status()
         return resp.json()
+
+    @property
+    def last_requests_remaining(self) -> Optional[str]:
+        """From The Odds API response header x-requests-remaining (if present)."""
+        return self._last_requests_remaining
 
     async def list_sports(self) -> list[dict]:
         """

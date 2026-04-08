@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kalshi Odds Scanner</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --border: #2d3a4d;
+      --text: #e7ecf3;
+      --muted: #8b9cb3;
+      --accent: #3d8bfd;
+      --green: #3ecf8e;
+      --yellow: #e6c547;
+      --red: #f07178;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    header h1 { margin: 0; font-size: 1.25rem; font-weight: 600; }
+    header p { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.875rem; }
+    main { padding: 1.25rem 1.5rem 2rem; max-width: 1400px; margin: 0 auto; }
+    .grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      margin-bottom: 1.25rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.1rem;
+    }
+    .card h2 {
+      margin: 0 0 0.75rem;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .stat { font-size: 1.5rem; font-weight: 700; }
+    .stat small { font-size: 0.85rem; font-weight: 400; color: var(--muted); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.5rem 0.6rem;
+      border-bottom: 1px solid var(--border);
+    }
+    th { color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    tr:hover td { background: rgba(255,255,255,0.03); }
+    .edge-high { color: var(--green); font-weight: 600; }
+    .edge-med { color: var(--yellow); }
+    .edge-low { color: var(--muted); }
+    .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-top: 0.75rem; }
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.8125rem;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    button:hover { filter: brightness(1.08); }
+    button.secondary { background: var(--border); color: var(--text); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .error { color: var(--red); font-size: 0.875rem; margin-top: 0.5rem; }
+    .banner {
+      background: rgba(61, 139, 253, 0.12);
+      border: 1px solid rgba(61, 139, 253, 0.35);
+      color: var(--text);
+      padding: 0.65rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-size: 0.875rem;
+    }
+    input[type="number"] {
+      width: 5rem;
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+    }
+    footer { margin-top: 2rem; font-size: 0.75rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Kalshi Odds Scanner</h1>
+    <p id="subtitle">Loading…</p>
+  </header>
+  <main>
+    <div id="warn" class="banner" style="display:none;"></div>
+    <div class="grid">
+      <div class="card">
+        <h2>Last scan</h2>
+        <div class="stat" id="lastScan">—</div>
+      </div>
+      <div class="card">
+        <h2>Scan count</h2>
+        <div class="stat" id="scanCount">0</div>
+      </div>
+      <div class="card">
+        <h2>Odds API credits</h2>
+        <div class="stat" id="oddsCredits">— <small>remaining</small></div>
+      </div>
+      <div class="card">
+        <h2>Realized P&amp;L</h2>
+        <div class="stat" id="pnlTotal">$0.00</div>
+      </div>
+      <div class="card">
+        <h2>Open / settled</h2>
+        <div class="stat"><span id="openCt">0</span> <small>open</small> · <span id="settledCt">0</span> <small>closed</small></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem;">
+      <h2>Actions</h2>
+      <div class="actions">
+        <button type="button" id="btnScan">Run scan now</button>
+        <span style="color:var(--muted);font-size:0.8125rem;">Auto-refresh UI every 30s</span>
+      </div>
+      <p class="error" id="scanErr" style="display:none;"></p>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem;">
+      <h2>Opportunities</h2>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Game</th>
+              <th>Edge</th>
+              <th>Kalshi</th>
+              <th>Hedge</th>
+              <th>Conf</th>
+              <th>Liq</th>
+              <th>Execute</th>
+            </tr>
+          </thead>
+          <tbody id="oppBody"></tbody>
+        </table>
+      </div>
+      <p id="oppEmpty" style="color:var(--muted);display:none;">No opportunities. Configure APIs and mappings, then run a scan.</p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Open positions</h2>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Ticker</th>
+                <th>Dir</th>
+                <th>Shares</th>
+                <th>Entry</th>
+              </tr>
+            </thead>
+            <tbody id="posBody"></tbody>
+          </table>
+        </div>
+        <p id="posEmpty" style="color:var(--muted);margin-top:0.5rem;display:none;">No open positions.</p>
+      </div>
+      <div class="card">
+        <h2>Recent settled</h2>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Ticker</th>
+                <th>P&amp;L</th>
+              </tr>
+            </thead>
+            <tbody id="settledBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <footer>Kelly fraction and bankroll from env. Execution requires KALSHI_ODDS_EXECUTION_ENABLED=true.</footer>
+  </main>
+  <script>
+    const fmtMoney = (n) => {
+      const x = Number(n);
+      if (Number.isNaN(x)) return "—";
+      return (x >= 0 ? "$" : "-$") + Math.abs(x).toFixed(2);
+    };
+    const edgeClass = (c) => {
+      if (c >= 2) return "edge-high";
+      if (c >= 1) return "edge-med";
+      return "edge-low";
+    };
+
+    async function loadState() {
+      let d;
+      try {
+        const r = await fetch("/api/state");
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        d = await r.json();
+      } catch (e) {
+        console.error("loadState failed:", e);
+        document.getElementById("subtitle").textContent = "Error fetching state: " + e.message;
+        return;
+      }
+      try {
+        const sub = [];
+        if (!d.kalshi_configured) sub.push("Kalshi API not configured");
+        if (!d.odds_configured) sub.push("Odds API not configured");
+        document.getElementById("subtitle").textContent = sub.length
+          ? sub.join(" \u00b7 ")
+          : "Live \u00b7 poll " + d.poll_interval_seconds + "s \u00b7 execution " + (d.execution_enabled ? "on" : "off");
+
+        var warn = document.getElementById("warn");
+        if (d.last_error) {
+          warn.style.display = "block";
+          warn.textContent = "Last error: " + d.last_error;
+        } else {
+          warn.style.display = "none";
+        }
+
+        document.getElementById("lastScan").textContent = d.last_scan_iso
+          ? new Date(d.last_scan_iso).toLocaleString()
+          : "Never";
+        document.getElementById("scanCount").textContent = String(d.scan_count || 0);
+        document.getElementById("oddsCredits").innerHTML =
+          (d.odds_requests_remaining != null ? String(d.odds_requests_remaining) : "\u2014") + " <small>remaining</small>";
+        document.getElementById("pnlTotal").textContent = fmtMoney(d.pnl ? d.pnl.total_realized_pnl : 0);
+        document.getElementById("openCt").textContent = String(d.pnl ? d.pnl.open_count : 0);
+        document.getElementById("settledCt").textContent = String(d.pnl ? d.pnl.settled_count : 0);
+
+        var opps = d.opportunities || [];
+        var tbody = document.getElementById("oppBody");
+        tbody.innerHTML = "";
+        document.getElementById("oppEmpty").style.display = opps.length ? "none" : "block";
+        for (var i = 0; i < opps.length; i++) {
+          var o = opps[i];
+          var tr = document.createElement("tr");
+          var ec = edgeClass(o.edge_cents || 0);
+          tr.innerHTML =
+            "<td>" + (i + 1) + "</td>" +
+            "<td>" + escapeHtml((o.game_label || "").substring(0, 28)) + "</td>" +
+            "<td class='" + ec + "'>" + Number(o.edge_cents || 0).toFixed(1) + "c</td>" +
+            "<td>" + escapeHtml((o.kalshi_action || "").substring(0, 40)) + "</td>" +
+            "<td>" + escapeHtml((o.hedge_action || "").substring(0, 36)) + "</td>" +
+            "<td>" + escapeHtml(String(o.confidence || "")) + "</td>" +
+            "<td>" + escapeHtml(String(o.kalshi_liquidity || "")) + "</td>" +
+            "<td><input type='number' min='1' value='100' aria-label='Shares for row " + (i+1) + "' id='sh-" + (i+1) + "' /> " +
+            "<button type='button' class='secondary' data-exec='" + (i+1) + "'>Dry run</button>" +
+            (d.execution_enabled ? " <button type='button' data-live='" + (i+1) + "'>Place order</button>" : "") +
+            "</td>";
+          tbody.appendChild(tr);
+        }
+        tbody.querySelectorAll("button[data-exec]").forEach(function(btn) {
+          btn.addEventListener("click", function() { doExec(parseInt(btn.getAttribute("data-exec"), 10), true); });
+        });
+        tbody.querySelectorAll("button[data-live]").forEach(function(btn) {
+          btn.addEventListener("click", function() { doExec(parseInt(btn.getAttribute("data-live"), 10), false); });
+        });
+
+        var pos = d.positions || [];
+        var pb = document.getElementById("posBody");
+        pb.innerHTML = "";
+        document.getElementById("posEmpty").style.display = pos.length ? "none" : "block";
+        for (var j = 0; j < pos.length; j++) {
+          var p = pos[j];
+          var ptr = document.createElement("tr");
+          ptr.innerHTML =
+            "<td>" + escapeHtml(p.ticker) + "</td>" +
+            "<td>" + escapeHtml(p.direction) + "</td>" +
+            "<td>" + escapeHtml(String(p.shares)) + "</td>" +
+            "<td>" + escapeHtml(String(p.entry_price_cents)) + "c</td>";
+          pb.appendChild(ptr);
+        }
+
+        var settled = d.settled || [];
+        var sb = document.getElementById("settledBody");
+        sb.innerHTML = "";
+        for (var k = 0; k < Math.min(settled.length, 20); k++) {
+          var sp = settled[k];
+          var str = document.createElement("tr");
+          str.innerHTML =
+            "<td>" + escapeHtml(sp.ticker) + "</td>" +
+            "<td>" + fmtMoney(sp.realized_pnl) + "</td>";
+          sb.appendChild(str);
+        }
+      } catch (e) {
+        console.error("loadState render error:", e);
+        document.getElementById("subtitle").textContent = "Render error: " + e.message;
+      }
+    }
+
+    function escapeHtml(s) {
+      const t = document.createElement("div");
+      t.textContent = s;
+      return t.innerHTML;
+    }
+
+    async function doExec(index, dryRun) {
+      const inp = document.getElementById("sh-" + index);
+      const shares = inp ? parseInt(inp.value, 10) || 100 : 100;
+      const r = await fetch("/api/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ index, shares, dry_run: dryRun }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        alert("Execute failed: " + (j.detail || r.statusText));
+        return;
+      }
+      alert(dryRun ? "Dry run OK: " + JSON.stringify(j) : "Order result: " + JSON.stringify(j));
+      loadState();
+    }
+
+    document.getElementById("btnScan").addEventListener("click", async () => {
+      const err = document.getElementById("scanErr");
+      err.style.display = "none";
+      const r = await fetch("/api/scan", { method: "POST" });
+      const j = await r.json();
+      if (!j.ok && j.error) {
+        err.style.display = "block";
+        err.textContent = j.error;
+      }
+      loadState();
+    });
+
+    loadState();
+    setInterval(loadState, 30000);
+  </script>
+</body>
+</html>

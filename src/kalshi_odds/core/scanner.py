@@ -216,7 +216,10 @@ class Scanner:
 
         # Validate staleness
         now = datetime.now(timezone.utc)
-        kalshi_age = (now - kalshi_tob.timestamp).total_seconds()
+        kt = kalshi_tob.timestamp
+        if kt.tzinfo is None:
+            kt = kt.replace(tzinfo=timezone.utc)
+        kalshi_age = (now - kt).total_seconds()
         if kalshi_age > self.max_staleness_seconds:
             return []
 

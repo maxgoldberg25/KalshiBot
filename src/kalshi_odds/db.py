@@ -19,6 +19,7 @@ import aiosqlite
 from kalshi_odds.models.kalshi import KalshiContract, KalshiTopOfBook
 from kalshi_odds.models.odds import OddsQuote
 from kalshi_odds.models.comparison import Alert
+from kalshi_odds.core.portfolio import Position, PositionStatus, PnLSummary
 
 
 class Repository:
@@ -87,6 +88,25 @@ class Repository:
                 data_json TEXT
             )
         """)
+
+        await self._conn.execute("""
+            CREATE TABLE IF NOT EXISTS positions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ticker TEXT NOT NULL,
+                direction TEXT NOT NULL,
+                shares INTEGER NOT NULL,
+                entry_price_cents INTEGER NOT NULL,
+                market_key TEXT DEFAULT '',
+                status TEXT NOT NULL DEFAULT 'open',
+                entered_at TEXT NOT NULL,
+                settled_at TEXT,
+                realized_pnl REAL,
+                notes TEXT DEFAULT ''
+            )
+        """)
+        await self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_positions_ticker_open ON positions(ticker, status)"
+        )
 
         await self._conn.commit()
 
@@ -180,6 +200,141 @@ class Repository:
             alerts.append(Alert(**data))
         
         return alerts
+
+    async def save_position(self, position: Position) -> int:
+        """Insert a position and return its row id."""
+        assert self._conn is not None
+        await self._conn.execute(
+            """
+            INSERT INTO positions
+            (ticker, direction, shares, entry_price_cents, market_key, status, entered_at, settled_at, realized_pnl, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                position.ticker,
+                position.direction.value,
+                position.shares,
+                position.entry_price_cents,
+                position.market_key,
+                position.status.value,
+                position.entered_at.isoformat(),
+                position.settled_at.isoformat() if position.settled_at else None,
+                position.realized_pnl,
+                position.notes,
+            ),
+        )
+        await self._conn.commit()
+        cur = await self._conn.execute("SELECT last_insert_rowid()")
+        row = await cur.fetchone()
+        return int(row[0]) if row else 0
+
+    async def has_open_position(self, ticker: str, direction: str) -> bool:
+        """True if an open row exists for this ticker and direction (dedupe auto-exec)."""
+        assert self._conn is not None
+        cursor = await self._conn.execute(
+            """
+            SELECT 1 FROM positions
+            WHERE ticker = ? AND direction = ? AND status = ?
+            LIMIT 1
+            """,
+            (ticker, direction, PositionStatus.OPEN.value),
+        )
+        row = await cursor.fetchone()
+        return row is not None
+
+    async def get_open_positions(self) -> list[Position]:
+        assert self._conn is not None
+        from kalshi_odds.models.comparison import Direction
+
+        cursor = await self._conn.execute(
+            """
+            SELECT id, ticker, direction, shares, entry_price_cents, market_key, status, entered_at, settled_at, realized_pnl, notes
+            FROM positions WHERE status = ? ORDER BY entered_at DESC
+            """,
+            (PositionStatus.OPEN.value,),
+        )
+        rows = await cursor.fetchall()
+        out: list[Position] = []
+        for row in rows:
+            out.append(
+                Position(
+                    id=row[0],
+                    ticker=row[1],
+                    direction=Direction(row[2]),
+                    shares=row[3],
+                    entry_price_cents=row[4],
+                    market_key=row[5] or "",
+                    status=PositionStatus(row[6]),
+                    entered_at=datetime.fromisoformat(row[7]),
+                    settled_at=datetime.fromisoformat(row[8]) if row[8] else None,
+                    realized_pnl=row[9],
+                    notes=row[10] or "",
+                )
+            )
+        return out
+
+    async def get_settled_positions(self, limit: int = 100) -> list[Position]:
+        assert self._conn is not None
+        from kalshi_odds.models.comparison import Direction
+
+        cursor = await self._conn.execute(
+            """
+            SELECT id, ticker, direction, shares, entry_price_cents, market_key, status, entered_at, settled_at, realized_pnl, notes
+            FROM positions WHERE status = ? ORDER BY COALESCE(settled_at, entered_at) DESC LIMIT ?
+            """,
+            (PositionStatus.SETTLED.value, limit),
+        )
+        rows = await cursor.fetchall()
+        out: list[Position] = []
+        for row in rows:
+            out.append(
+                Position(
+                    id=row[0],
+                    ticker=row[1],
+                    direction=Direction(row[2]),
+                    shares=row[3],
+                    entry_price_cents=row[4],
+                    market_key=row[5] or "",
+                    status=PositionStatus(row[6]),
+                    entered_at=datetime.fromisoformat(row[7]),
+                    settled_at=datetime.fromisoformat(row[8]) if row[8] else None,
+                    realized_pnl=row[9],
+                    notes=row[10] or "",
+                )
+            )
+        return out
+
+    async def get_pnl_summary(self) -> PnLSummary:
+        assert self._conn is not None
+        open_cur = await self._conn.execute(
+            "SELECT COUNT(*) FROM positions WHERE status = ?",
+            (PositionStatus.OPEN.value,),
+        )
+        open_row = await open_cur.fetchone()
+        open_count = int(open_row[0]) if open_row else 0
+
+        settled_cur = await self._conn.execute(
+            """
+            SELECT COUNT(*), COALESCE(SUM(realized_pnl), 0),
+                   SUM(CASE WHEN realized_pnl > 0 THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN realized_pnl < 0 THEN 1 ELSE 0 END)
+            FROM positions WHERE status = ? AND realized_pnl IS NOT NULL
+            """,
+            (PositionStatus.SETTLED.value,),
+        )
+        settled_row = await settled_cur.fetchone()
+        settled_count = int(settled_row[0]) if settled_row else 0
+        total = float(settled_row[1]) if settled_row and settled_row[1] is not None else 0.0
+        winning = int(settled_row[2]) if settled_row and settled_row[2] is not None else 0
+        losing = int(settled_row[3]) if settled_row and settled_row[3] is not None else 0
+
+        return PnLSummary(
+            total_realized_pnl=total,
+            settled_count=settled_count,
+            open_count=open_count,
+            winning_count=winning,
+            losing_count=losing,
+        )
 
     async def __aenter__(self) -> Repository:
         await self.connect()

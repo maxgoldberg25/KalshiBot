@@ -191,3 +191,147 @@ markets:
     event_id: 734128222c2a03269132090adb3c593d
     market_type: h2h
     selection: Houston Rockets
+- market_key: nba_20260329_gswden_gsw
+  kalshi:
+    contract_id: KXNBAGAME-26MAR29GSWDEN-GSW
+    side: 'YES'
+  odds:
+    event_id: 976eb35602aca3acd738ec2621478695
+    market_type: h2h
+    selection: Golden State Warriors
+- market_key: nba_20260329_gswden_den
+  kalshi:
+    contract_id: KXNBAGAME-26MAR29GSWDEN-DEN
+    side: 'YES'
+  odds:
+    event_id: 976eb35602aca3acd738ec2621478695
+    market_type: h2h
+    selection: Denver Nuggets
+- market_key: nba_20260329_nykokc_okc
+  kalshi:
+    contract_id: KXNBAGAME-26MAR29NYKOKC-OKC
+    side: 'YES'
+  odds:
+    event_id: f1fe04fb5d59dc4d3b310d56b74a9f2a
+    market_type: h2h
+    selection: Oklahoma City Thunder
+- market_key: nba_20260329_nykokc_nyk
+  kalshi:
+    contract_id: KXNBAGAME-26MAR29NYKOKC-NYK
+    side: 'YES'
+  odds:
+    event_id: f1fe04fb5d59dc4d3b310d56b74a9f2a
+    market_type: h2h
+    selection: New York Knicks
+- market_key: nba_20260329_boscha_cha
+  kalshi:
+    contract_id: KXNBAGAME-26MAR29BOSCHA-CHA
+    side: 'YES'
+  odds:
+    event_id: 8d6b8b25d9790bf08a65761a3d63b611
+    market_type: h2h
+    selection: Charlotte Hornets
+- market_key: nba_20260329_boscha_bos
+  kalshi:
+    contract_id: KXNBAGAME-26MAR29BOSCHA-BOS
+    side: 'YES'
+  odds:
+    event_id: 8d6b8b25d9790bf08a65761a3d63b611
+    market_type: h2h
+    selection: Boston Celtics
+- market_key: nba_20260329_orltor_tor
+  kalshi:
+    contract_id: KXNBAGAME-26MAR29ORLTOR-TOR
+    side: 'YES'
+  odds:
+    event_id: 4d3b276afc5789fb4a6564eee411bfa9
+    market_type: h2h
+    selection: Toronto Raptors
+- market_key: nba_20260329_orltor_orl
+  kalshi:
+    contract_id: KXNBAGAME-26MAR29ORLTOR-ORL
+    side: 'YES'
+  odds:
+    event_id: 4d3b276afc5789fb4a6564eee411bfa9
+    market_type: h2h
+    selection: Orlando Magic
+- market_key: nba_20260328_sacatl_sac
+  kalshi:
+    contract_id: KXNBAGAME-26MAR28SACATL-SAC
+    side: 'YES'
+  odds:
+    event_id: d7a3bd092d17e72cfe007b92fc74dd1f
+    market_type: h2h
+    selection: Sacramento Kings
+- market_key: nba_20260328_sacatl_atl
+  kalshi:
+    contract_id: KXNBAGAME-26MAR28SACATL-ATL
+    side: 'YES'
+  odds:
+    event_id: d7a3bd092d17e72cfe007b92fc74dd1f
+    market_type: h2h
+    selection: Atlanta Hawks
+- market_key: nba_20260328_chimem_mem
+  kalshi:
+    contract_id: KXNBAGAME-26MAR28CHIMEM-MEM
+    side: 'YES'
+  odds:
+    event_id: df362c645ce96c954aeec281f1951a22
+    market_type: h2h
+    selection: Memphis Grizzlies
+- market_key: nba_20260328_chimem_chi
+  kalshi:
+    contract_id: KXNBAGAME-26MAR28CHIMEM-CHI
+    side: 'YES'
+  odds:
+    event_id: df362c645ce96c954aeec281f1951a22
+    market_type: h2h
+    selection: Chicago Bulls
+- market_key: nba_20260328_utaphx_uta
+  kalshi:
+    contract_id: KXNBAGAME-26MAR28UTAPHX-UTA
+    side: 'YES'
+  odds:
+    event_id: 6ddf73112fefbe7dcb275c09ebdae6a6
+    market_type: h2h
+    selection: Utah Jazz
+- market_key: nba_20260328_utaphx_phx
+  kalshi:
+    contract_id: KXNBAGAME-26MAR28UTAPHX-PHX
+    side: 'YES'
+  odds:
+    event_id: 6ddf73112fefbe7dcb275c09ebdae6a6
+    market_type: h2h
+    selection: Phoenix Suns
+- market_key: nba_20260328_phicha_phi
+  kalshi:
+    contract_id: KXNBAGAME-26MAR28PHICHA-PHI
+    side: 'YES'
+  odds:
+    event_id: def835f85134dff31d0e29a14591d960
+    market_type: h2h
+    selection: Philadelphia 76ers
+- market_key: nba_20260328_phicha_cha
+  kalshi:
+    contract_id: KXNBAGAME-26MAR28PHICHA-CHA
+    side: 'YES'
+  odds:
+    event_id: def835f85134dff31d0e29a14591d960
+    market_type: h2h
+    selection: Charlotte Hornets
+- market_key: nba_20260328_detmin_min
+  kalshi:
+    contract_id: KXNBAGAME-26MAR28DETMIN-MIN
+    side: 'YES'
+  odds:
+    event_id: 2f64bcd6f06f9cb1132a6be530d6848c
+    market_type: h2h
+    selection: Minnesota Timberwolves
+- market_key: nba_20260328_detmin_det
+  kalshi:
+    contract_id: KXNBAGAME-26MAR28DETMIN-DET
+    side: 'YES'
+  odds:
+    event_id: 2f64bcd6f06f9cb1132a6be530d6848c
+    market_type: h2h
+    selection: Detroit Pistons

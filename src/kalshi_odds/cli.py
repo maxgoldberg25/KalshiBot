@@ -17,9 +17,12 @@ from kalshi_odds.adapters.kalshi import KalshiAdapter
 from kalshi_odds.adapters.odds_api import OddsAPIAdapter
 from kalshi_odds.core.automapper import auto_map as run_auto_map
 from kalshi_odds.core.matcher import MarketMatcher
-from kalshi_odds.core.scanner import Scanner, aggregate_opportunities
+from kalshi_odds.core.scan_runner import run_scan_cycle
+from kalshi_odds.core.scanner import Scanner
+from kalshi_odds.core.sizing import kelly_shares
 from kalshi_odds.db import Repository
-from kalshi_odds.models.comparison import Alert, Opportunity
+from kalshi_odds.execution import place_opportunity_order
+from kalshi_odds.models.comparison import Alert, Confidence, Opportunity
 
 app = typer.Typer(
     name="kalshi-odds",
@@ -222,41 +225,48 @@ def match_candidates(
     asyncio.run(_run())
 
 
-async def _run_scan_cycle(
-    sport: str,
-    matcher: MarketMatcher,
-    scanner: Scanner,
-    kalshi: KalshiAdapter,
-    odds_api: OddsAPIAdapter,
-) -> tuple[list[Alert], list[Opportunity]]:
-    """Run one scan: fetch odds, compare all mapped markets, return alerts and aggregated opportunities."""
-    raw_events = await odds_api.get_odds(sport=sport)
-    quotes = odds_api.parse_odds_to_quotes(raw_events)
-    all_alerts: list[Alert] = []
-    for market_key in matcher.get_all_market_keys():
-        mapping = matcher.get_mapping(market_key)
-        if not mapping:
+def _confidence_meets_minimum(conf: Confidence, min_name: str) -> bool:
+    rank = {Confidence.LOW: 0, Confidence.MED: 1, Confidence.HIGH: 2}
+    need = {"low": 0, "med": 1, "high": 2}.get(min_name.lower().strip(), 2)
+    return rank.get(conf, 0) >= need
+
+
+async def _maybe_auto_execute(
+    opportunities: list[Opportunity],
+    settings,
+    repo: Repository,
+) -> None:
+    if not settings.execution_enabled or not opportunities:
+        return
+    min_conf = settings.auto_execute_min_confidence
+    for opp in opportunities:
+        if not _confidence_meets_minimum(opp.confidence, min_conf):
             continue
-        kalshi_data = mapping.get("kalshi", {})
-        contract_id = kalshi_data.get("contract_id")
-        if not contract_id:
+        if await repo.has_open_position(opp.kalshi_ticker, opp.direction.value):
             continue
-        tob = await kalshi.get_top_of_book(contract_id)
-        if not tob:
+        shares = kelly_shares(
+            opp.edge_bps,
+            opp.kalshi_price_cents,
+            opp.direction,
+            settings.bankroll_dollars,
+            settings.kelly_fraction,
+            settings.max_notional_per_trade,
+            max_shares=opp.max_shares,
+        )
+        if shares < 1:
             continue
-        odds_data = mapping.get("odds", {})
-        event_id = odds_data.get("event_id", "")
-        market_type = odds_data.get("market_type", "")
-        relevant_quotes = [
-            q for q in quotes
-            if q.event_id == event_id and q.market_type.value == market_type
-        ]
-        if not relevant_quotes:
-            continue
-        alerts = scanner.compare(market_key, tob, relevant_quotes, mapping)
-        all_alerts.extend(alerts)
-    opportunities = aggregate_opportunities(all_alerts)
-    return all_alerts, opportunities
+        try:
+            await place_opportunity_order(
+                opp,
+                shares,
+                dry_run=False,
+                settings=settings,
+                repo=repo,
+                save_position=True,
+            )
+            console.print(f"[green]Auto-executed[/] {opp.kalshi_ticker} x{shares} ({opp.confidence.value})")
+        except Exception as e:
+            console.print(f"[red]Auto-exec failed[/] {opp.kalshi_ticker}: {e}")
 
 
 @app.command("scan")
@@ -307,7 +317,7 @@ def scan(
                 max_staleness_seconds=settings.max_staleness_seconds,
             )
             console.print(f"[blue]Scanning {sport}...[/]")
-            all_alerts, opportunities = await _run_scan_cycle(sport, matcher, scanner, kalshi, odds_api)
+            all_alerts, opportunities = await run_scan_cycle(sport, matcher, scanner, kalshi, odds_api)
             now = datetime.now(timezone.utc).strftime("%b %d %Y %I:%M%p EST")
             console.print(f"\n[bold]KALSHI ODDS SCANNER[/]  |  [cyan]{len(opportunities)} opportunities[/]  |  {now}\n")
             _render_opportunities_table(opportunities)
@@ -377,12 +387,13 @@ def run(
             while True:
                 try:
                     console.print(f"[dim]Scanning at [cyan]NOW[/]...[/]")
-                    all_alerts, opportunities = await _run_scan_cycle(sport, matcher, scanner, kalshi, odds_api)
+                    all_alerts, opportunities = await run_scan_cycle(sport, matcher, scanner, kalshi, odds_api)
                     if opportunities:
                         now = datetime.now(timezone.utc).strftime("%b %d %Y %I:%M%p EST")
                         console.print(f"\n[bold]KALSHI ODDS SCANNER[/]  |  [cyan]{len(opportunities)} opportunities[/]  |  {now}\n")
                         _render_opportunities_table(opportunities)
                         _save_last_opportunities(opportunities)
+                        await _maybe_auto_execute(opportunities, settings, repo)
                         for alert in all_alerts:
                             await repo.save_alert(alert)
                             with open(settings.output_jsonl, "a") as f:
@@ -465,23 +476,16 @@ def execute(
         console.print("\n[dim]Run with --no-dry-run --confirm to place the order.[/]")
         return
 
-    async def _place():
-        from kalshi_odds.models.comparison import Direction
-        async with KalshiAdapter(
-            api_key_id=settings.kalshi_api_key_id,
-            private_key_path=settings.kalshi_private_key_path,
-        ) as kalshi:
-            side = "yes"
-            action = "sell" if opp.direction == Direction.KALSHI_RICH else "buy"
-            price_cents = max(1, min(99, opp.kalshi_price_cents))
-            result = await kalshi.place_order(
-                ticker=opp.kalshi_ticker,
-                side=side,
-                action=action,
-                count=shares,
-                yes_price=price_cents,
+    async def _place() -> dict:
+        async with Repository(settings.database_url.split("///")[-1]) as repo:
+            return await place_opportunity_order(
+                opp,
+                shares,
+                dry_run=False,
+                settings=settings,
+                repo=repo,
+                save_position=True,
             )
-            return result
 
     try:
         result = asyncio.run(_place())
@@ -531,6 +535,25 @@ def show(
             console.print(table)
 
     asyncio.run(_run())
+
+
+@app.command("dashboard")
+def dashboard(
+    port: Optional[int] = typer.Option(None, "--port", "-p", help="Port (default from config)"),
+) -> None:
+    """Start web dashboard (opportunities, positions, PnL) on http://127.0.0.1:<port>."""
+    import uvicorn
+
+    settings = get_settings()
+    bind_port = port if port is not None else settings.dashboard_port
+    console.print(f"[green]Dashboard[/] http://127.0.0.1:{bind_port}  (Ctrl+C to stop)")
+    uvicorn.run(
+        "kalshi_odds.dashboard.server:create_app",
+        factory=True,
+        host="127.0.0.1",
+        port=bind_port,
+        reload=False,
+    )
 
 
 def main() -> None:
