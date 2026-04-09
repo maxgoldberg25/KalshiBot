@@ -13,6 +13,7 @@ import uuid
 from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Optional
+from urllib.parse import quote
 
 from kalshi_odds.core.odds_math import american_to_prob, decimal_to_prob, no_vig_two_way
 from kalshi_odds.models.kalshi import KalshiTopOfBook
@@ -64,21 +65,15 @@ def _game_label_from_market_key(market_key: str) -> str:
     return rest[0].upper()
 
 
-def _kalshi_url_from_ticker(ticker: str) -> str:
-    """Build Kalshi market URL from contract ticker."""
-    ticker_lower = ticker.lower()
-    if ticker_lower.startswith("kxnbagame"):
-        base = "https://kalshi.com/markets/kxnbagame/professional-basketball-game"
-    elif ticker_lower.startswith("kxsb"):
-        base = "https://kalshi.com/markets/kxsb/super-bowl"
-    elif ticker_lower.startswith("kxnfl"):
-        base = "https://kalshi.com/markets/kxnflgame/professional-football-game"
-    else:
-        base = "https://kalshi.com/markets"
-    return f"{base}/{ticker_lower}"
+def _kalshi_markets_search_url(ticker: str) -> str:
+    """Fallback: Kalshi site search for a ticker (works when deep links are unknown)."""
+    return f"https://kalshi.com/markets?search={quote(ticker.strip())}"
 
 
-def aggregate_opportunities(alerts: list[Alert]) -> list[Opportunity]:
+def aggregate_opportunities(
+    alerts: list[Alert],
+    kalshi_url_by_ticker: Optional[dict[str, str]] = None,
+) -> list[Opportunity]:
     """
     Group raw alerts by (market_key, direction) and build one Opportunity per group.
     Rank by edge_cents * sqrt(liquidity) * book_count.
@@ -167,7 +162,8 @@ def aggregate_opportunities(alerts: list[Alert]) -> list[Opportunity]:
         rank_score = edge_cents * math.sqrt(max(1, kalshi_liquidity)) * (1 + math.log1p(book_count))
 
         game_label = _game_label_from_market_key(market_key)
-        kalshi_url = _kalshi_url_from_ticker(kalshi_ticker)
+        url_map = kalshi_url_by_ticker or {}
+        kalshi_url = url_map.get(kalshi_ticker) or _kalshi_markets_search_url(kalshi_ticker)
 
         is_estimated = any("[ESTIMATED]" in (a.notes or "") for a in group)
         odds_source = group[0].raw_snapshot_refs.get("odds_source", "") if group else ""

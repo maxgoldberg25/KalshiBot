@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from kalshi_odds.adapters.kalshi import KalshiAdapter
+from kalshi_odds.adapters.kalshi_web_url import resolve_kalshi_market_web_urls
 from kalshi_odds.adapters.odds_api import OddsAPIAdapter
 from kalshi_odds.core.matcher import MarketMatcher
 from kalshi_odds.core.odds_math import american_to_prob, no_vig_two_way
@@ -224,7 +225,9 @@ async def run_scan_cycle(
             alerts = scanner.compare(market_key, tob, relevant_quotes, mapping)
         all_alerts.extend(alerts)
 
-    opportunities = aggregate_opportunities(all_alerts)
+    tickers = {a.kalshi_contract_id for a in all_alerts if a.kalshi_contract_id}
+    url_by = await resolve_kalshi_market_web_urls(tickers) if tickers else {}
+    opportunities = aggregate_opportunities(all_alerts, kalshi_url_by_ticker=url_by)
     return all_alerts, opportunities
 
 
@@ -254,7 +257,9 @@ async def run_multi_sport_scan(
             all_alerts.extend(alerts)
         except Exception as exc:
             errors.append(f"{sport}: {exc}")
-    opportunities = aggregate_opportunities(all_alerts)
+    tickers = {a.kalshi_contract_id for a in all_alerts if a.kalshi_contract_id}
+    url_by = await resolve_kalshi_market_web_urls(tickers) if tickers else {}
+    opportunities = aggregate_opportunities(all_alerts, kalshi_url_by_ticker=url_by)
     if errors and not all_alerts:
         raise RuntimeError("; ".join(errors))
     return all_alerts, opportunities

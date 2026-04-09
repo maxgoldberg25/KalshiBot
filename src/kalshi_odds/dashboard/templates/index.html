@@ -112,6 +112,9 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--kb-
 .sort-arrow{font-size:.55rem;margin-left:3px;opacity:.2}
 .sorted .sort-arrow{opacity:1;color:var(--kb-accent)}
 .mono{font-family:'JetBrains Mono',monospace;font-size:.75rem}
+.opp-link{display:inline-flex;align-items:center;gap:4px;text-decoration:none;color:var(--kb-accent2);font-weight:600;transition:color .15s,opacity .15s}
+.opp-link:hover{color:#93c5fd;text-decoration:underline;text-underline-offset:2px}
+.opp-link-icon{opacity:.9;flex-shrink:0}
 
 /* Edge cells */
 .edge-cell{position:relative;padding-left:.75rem!important;font-weight:700;font-variant-numeric:tabular-nums}
@@ -491,6 +494,15 @@ footer{padding:1rem 1.5rem;font-size:.67rem;color:var(--kb-dim);text-align:cente
 var D=document;
 function $(id){return D.getElementById(id)}
 function esc(s){var d=D.createElement("div");d.textContent=s;return d.innerHTML}
+function kalshiHrefForOpp(o){
+  /* Prefer the backend-resolved deep link (set by kalshi_web_url resolver).
+     Only fall back to a search URL if the backend URL is missing. */
+  var u=(o&&o.kalshi_url?String(o.kalshi_url):"").trim();
+  if(u&&u.indexOf("/markets/kx")!==-1)return u;  // has a proper deep link
+  var t=o&&o.kalshi_ticker?String(o.kalshi_ticker):"";
+  if(t)return "https://kalshi.com/markets?search="+encodeURIComponent(t);
+  return "https://kalshi.com/markets";
+}
 function fmtMoney(n){var x=Number(n);if(isNaN(x))return"—";return(x>=0?"+$":"-$")+Math.abs(x).toFixed(2)}
 function fmtTime(iso){if(!iso)return"—";return new Date(iso).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"})}
 function fmtAgo(iso){if(!iso)return"";var s=Math.floor((Date.now()-new Date(iso).getTime())/1000);if(s<5)return"just now";if(s<60)return s+"s ago";if(s<3600)return Math.floor(s/60)+"m ago";return Math.floor(s/3600)+"h ago"}
@@ -646,11 +658,17 @@ function renderOpps(d){
     var estBadge=o.is_estimated?'<span class="kb-badge kb-badge-amber" title="Estimated: no live Kalshi orderbook. Kalshi price simulated at ~90% of sportsbook fair value.">~EST</span> ':'';
     var srcLabel=o.odds_source?'<span class="kb-badge kb-badge-dim" style="font-size:.58rem;padding:1px 6px">'+esc(o.odds_source.toUpperCase())+'</span> ':'';
     var confBadge=(cc==="high"?"kb-badge-green":cc==="med"?"kb-badge-yellow":"kb-badge-dim");
+    var gameLabel=esc((o.game_label||"").substring(0,24));
+    var gameLabelFull=esc(o.game_label||"");
+    var kalshiHref=kalshiHrefForOpp(o);
+    var kalshiLink=kalshiHref
+      ?'<a class="opp-link" href="'+esc(kalshiHref)+'" target="_blank" rel="noopener noreferrer" title="Open on Kalshi: '+esc(o.kalshi_ticker||kalshiHref)+'"><span class="mono">'+gameLabel+'</span><svg class="opp-link-icon" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>'
+      :'<span class="mono" title="'+gameLabelFull+'">'+gameLabel+'</span>';
     var tr=D.createElement("tr");
     if(o.is_estimated)tr.style.opacity="0.85";
     tr.innerHTML=
       '<td style="color:var(--kb-muted);font-size:.72rem">'+idx+'</td>'+
-      '<td style="min-width:180px">'+estBadge+srcLabel+'<span class="mono" title="'+esc(o.game_label||"")+'">'+esc((o.game_label||"").substring(0,24))+'</span></td>'+
+      '<td style="min-width:180px">'+estBadge+srcLabel+kalshiLink+'</td>'+
       '<td class="edge-cell" style="min-width:70px"><div class="edge-fill '+ec+'" style="width:'+pct+'%"></div><span class="edge-text '+ec+' mono">'+Number(o.edge_cents||0).toFixed(1)+'¢</span></td>'+
       '<td style="min-width:190px;font-size:.75rem" title="'+esc(o.kalshi_action||"")+'">'+esc((o.kalshi_action||"").substring(0,44))+'</td>'+
       '<td style="min-width:160px;font-size:.73rem;color:var(--kb-muted)" title="'+esc(o.hedge_action||"")+'">'+esc((o.hedge_action||"").substring(0,38))+'</td>'+
@@ -677,12 +695,17 @@ function appendConfirmRow(tbody,o,idx,execEnabled){
   var tr=D.createElement("tr");tr.className="confirm-row";
   var kelly=o.kelly_shares||100;
   var edge$=(Number(o.edge_cents||0)*kelly/100).toFixed(2);
+  var kalshiHref=kalshiHrefForOpp(o);
+  var kalshiPageLink=kalshiHref
+    ?'<a href="'+esc(kalshiHref)+'" target="_blank" rel="noopener noreferrer" class="kb-btn kb-btn-ghost kb-btn-sm" style="display:inline-flex;align-items:center;gap:4px;text-decoration:none" title="View on Kalshi">Kalshi <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>'
+    :'';
   tr.innerHTML='<td colspan="10"><div class="confirm-inner">'+
     '<strong style="color:var(--kb-text)">'+esc(o.kalshi_action||"")+'</strong>'+
     ' · Shares: <input type="number" class="shares-input" min="1" value="'+kelly+'" id="cShares-'+idx+'" aria-label="shares"/>'+
     ' · <span id="cEdge-'+idx+'" style="color:var(--kb-green2)">Est $'+edge$+'</span>'+
     ' <button type="button" class="kb-btn kb-btn-ghost kb-btn-sm" data-dry="'+idx+'">Dry run</button>'+
     (execEnabled?' <button type="button" class="kb-btn kb-btn-success kb-btn-sm" data-live="'+idx+'">Confirm order</button>':' <span style="color:var(--kb-muted);font-size:.72rem">(enable in .env)</span>')+
+    kalshiPageLink+
     ' <button type="button" class="kb-btn kb-btn-ghost kb-btn-sm" data-cancel="'+idx+'" style="width:28px;height:28px;padding:0">×</button>'+
     '</div></td>';
   tbody.appendChild(tr);
