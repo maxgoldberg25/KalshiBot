@@ -241,6 +241,7 @@ footer{padding:1rem 1.5rem;font-size:.67rem;color:var(--kb-dim);text-align:cente
     <ul class="navbar-nav ms-3 me-auto" id="mainNav">
       <li class="nav-item"><a class="nav-link active" href="#home" data-page="home">Home</a></li>
       <li class="nav-item"><a class="nav-link" href="#scanner" data-page="scanner">Scanner</a></li>
+      <li class="nav-item"><a class="nav-link" href="#poly" data-page="poly">PM Arb</a></li>
       <li class="nav-item"><a class="nav-link" href="#settings" data-page="settings">Settings</a></li>
     </ul>
   </div>
@@ -452,6 +453,37 @@ footer{padding:1rem 1.5rem;font-size:.67rem;color:var(--kb-dim);text-align:cente
       </ul>
     </div>
 
+  </div>
+</div>
+
+<!-- ═══ PAGE: Polymarket Arb ═════════════════════ -->
+<div class="page" id="page-poly">
+  <div class="page-wrap">
+    <div class="kb-card mb-3">
+      <div class="kb-card-header">
+        <h3>Polymarket Arbitrage</h3>
+        <span class="kb-badge kb-badge-blue ms-auto" id="polyBadge" style="display:none">0</span>
+      </div>
+      <div style="overflow-x:auto;max-height:560px;overflow-y:auto">
+        <table class="kb-table">
+          <thead><tr>
+            <th>#</th>
+            <th>Market</th>
+            <th>Category</th>
+            <th>Edge</th>
+            <th>Kalshi</th>
+            <th>Polymarket</th>
+            <th>Match</th>
+            <th>Action</th>
+          </tr></thead>
+          <tbody id="polyBody"></tbody>
+        </table>
+        <div class="kb-empty" id="polyEmpty">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <p>No Polymarket arbitrage found yet. Run scan to populate.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -691,6 +723,32 @@ function renderOpps(d){
   });
 }
 
+function renderPolyOpps(d){
+  var opps=(d.poly_opportunities||[]).slice();
+  var tb=$("polyBody");if(!tb)return;
+  tb.innerHTML="";
+  var empty=$("polyEmpty");if(empty)empty.style.display=opps.length?"none":"block";
+  var badge=$("polyBadge");if(badge){badge.style.display=opps.length?"inline-flex":"none";badge.textContent=opps.length}
+  for(var i=0;i<opps.length;i++){
+    var o=opps[i],idx=i+1;
+    var ec=edgeCls(o.edge_cents||0);
+    var cat=(o.category||"other").toLowerCase();
+    var catCls=cat==="sports"?"kb-badge-blue":cat==="politics"?"kb-badge-yellow":cat==="crypto"?"kb-badge-green":"kb-badge-dim";
+    var confPct=Math.round((o.match_confidence||0)*100);
+    var tr=D.createElement("tr");
+    tr.innerHTML=
+      '<td style="color:var(--kb-muted)">'+idx+'</td>'+
+      '<td style="min-width:220px" title="'+esc(o.market_label||o.poly_question||"")+'"><span class="mono">'+esc(String((o.market_label||o.poly_question||"").substring(0,44)))+'</span></td>'+
+      '<td><span class="kb-badge '+catCls+'">'+esc(cat.toUpperCase())+'</span></td>'+
+      '<td class="edge-cell" style="min-width:70px"><div class="edge-fill '+ec+'" style="width:'+Math.min(100,Math.max(4,(o.edge_cents||0)*24))+'%"></div><span class="edge-text '+ec+' mono">'+Number(o.edge_cents||0).toFixed(1)+'¢</span></td>'+
+      '<td class="mono" style="min-width:120px">'+esc(String(Math.round((o.kalshi_yes_bid||0)*100)))+'/'+esc(String(Math.round((o.kalshi_yes_ask||0)*100)))+'c</td>'+
+      '<td class="mono" style="min-width:120px">'+esc(String(Math.round((o.poly_yes_bid||0)*100)))+'/'+esc(String(Math.round((o.poly_yes_ask||0)*100)))+'c</td>'+
+      '<td><span class="kb-badge kb-badge-dim">'+esc(String(confPct))+'%</span></td>'+
+      '<td style="min-width:180px"><a class="kb-btn kb-btn-ghost kb-btn-sm" href="'+esc(o.kalshi_url||"https://kalshi.com/markets")+'" target="_blank" rel="noopener noreferrer">Kalshi</a> <a class="kb-btn kb-btn-ghost kb-btn-sm" href="'+esc(o.poly_url||"https://polymarket.com")+'" target="_blank" rel="noopener noreferrer">Poly</a></td>';
+    tb.appendChild(tr);
+  }
+}
+
 function appendConfirmRow(tbody,o,idx,execEnabled){
   var tr=D.createElement("tr");tr.className="confirm-row";
   var kelly=o.kelly_shares||100;
@@ -784,7 +842,11 @@ function renderSettings(cfg){
   $("settingsApi").innerHTML=apiHtml;
   $("settingsMatching").innerHTML=
     row("Auto-map",cfg.auto_map_enabled?"Enabled":"Disabled","Auto-match Kalshi contracts to sportsbook events")+
-    row("Fuzzy match",cfg.fuzzy_match_enabled?"Enabled":"Disabled","Use fuzzy string matching for team names");
+    row("Fuzzy match",cfg.fuzzy_match_enabled?"Enabled":"Disabled","Use fuzzy string matching for team names")+
+    row("Polymarket arb",cfg.poly_enabled?"Enabled":"Disabled","Kalshi vs Polymarket all-market scan")+
+    row("PM min edge",cfg.poly_min_edge_bps+" bps","Minimum PM edge to show in PM Arb tab")+
+    row("PM min liquidity","$"+cfg.poly_min_liquidity_usd,"Filter low-liquidity Polymarket markets")+
+    row("PM match threshold",cfg.poly_match_threshold,"RapidFuzz score threshold for Kalshi/PM matching");
 }
 
 /* ── Load state ─────────────────────────────────── */
@@ -842,7 +904,7 @@ async function loadState(){
       if(scanHist.length>24)scanHist.shift();
       prevScanCount=sc;
     }
-    renderOpps(d);renderPositions(d);
+    renderOpps(d);renderPolyOpps(d);renderPositions(d);
     if($("page-scanner").classList.contains("active")){drawScanChart();drawEdgeChart()}
   }catch(e){
     var b=$("errBanner");if(b){b.className="kb-banner err";$("errText").textContent="Dashboard error: "+e.message}

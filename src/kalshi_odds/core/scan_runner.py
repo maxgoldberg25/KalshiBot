@@ -19,10 +19,12 @@ from typing import Optional
 from kalshi_odds.adapters.kalshi import KalshiAdapter
 from kalshi_odds.adapters.kalshi_web_url import resolve_kalshi_market_web_urls
 from kalshi_odds.adapters.odds_api import OddsAPIAdapter
+from kalshi_odds.adapters.polymarket import PolymarketAdapter
 from kalshi_odds.core.matcher import MarketMatcher
 from kalshi_odds.core.odds_math import american_to_prob, no_vig_two_way
+from kalshi_odds.core.poly_matcher import PolyMatcher, infer_category
 from kalshi_odds.core.scanner import Scanner, aggregate_opportunities
-from kalshi_odds.models.comparison import Alert, Opportunity
+from kalshi_odds.models.comparison import Alert, Opportunity, PolyOpportunity
 from kalshi_odds.models.kalshi import KalshiTopOfBook
 from kalshi_odds.models.odds import OddsFormat
 
@@ -263,3 +265,105 @@ async def run_multi_sport_scan(
     if errors and not all_alerts:
         raise RuntimeError("; ".join(errors))
     return all_alerts, opportunities
+
+
+async def run_poly_scan(
+    kalshi: KalshiAdapter,
+    polymarket: PolymarketAdapter,
+    *,
+    min_edge_bps: float = 20.0,
+    min_liquidity_usd: float = 100.0,
+    match_threshold: float = 82.0,
+) -> list[PolyOpportunity]:
+    """Scan Kalshi vs Polymarket across all active categories."""
+    poly_markets = await polymarket.list_all_markets(min_liquidity_usd=min_liquidity_usd)
+    if not poly_markets:
+        return []
+
+    # Pull broad Kalshi universe (all open contracts) and fuzzy match.
+    kalshi_contracts = await kalshi.list_contracts(limit=200, series_ticker=None)
+    kalshi_contracts = [
+        c for c in kalshi_contracts
+        if c.title and len(c.title) <= 120 and c.title.count(",") <= 1
+    ]
+    matches = PolyMatcher(fuzzy_threshold=match_threshold).match(poly_markets, kalshi_contracts)
+    if not matches:
+        return []
+
+    tickers = {m.kalshi.contract_id for m in matches}
+    sem = asyncio.Semaphore(5)
+    tob_results = await asyncio.gather(
+        *[_fetch_tob_throttled(kalshi, t, sem) for t in tickers],
+        return_exceptions=True,
+    )
+    tob_by_ticker: dict[str, KalshiTopOfBook] = {}
+    for res in tob_results:
+        if isinstance(res, Exception):
+            continue
+        t, tob = res
+        if tob is not None and isinstance(tob, KalshiTopOfBook) and tob.is_valid:
+            tob_by_ticker[t] = tob
+
+    url_by = await resolve_kalshi_market_web_urls(tickers) if tickers else {}
+    out: list[PolyOpportunity] = []
+    now = datetime.now(timezone.utc)
+
+    for m in matches:
+        ticker = m.kalshi.contract_id
+        tob = tob_by_ticker.get(ticker)
+        if tob is None or tob.yes_ask is None or tob.yes_bid is None:
+            continue
+
+        poly_bid = max(0.0, min(1.0, m.poly.best_bid))
+        poly_ask = max(0.0, min(1.0, m.poly.best_ask))
+        k_ask = max(0.0, min(1.0, tob.yes_ask))
+        k_bid = max(0.0, min(1.0, tob.yes_bid))
+
+        edge_buy_kalshi = (poly_bid - k_ask) * 10000.0
+        edge_sell_kalshi = (k_bid - poly_ask) * 10000.0
+
+        if edge_buy_kalshi < min_edge_bps and edge_sell_kalshi < min_edge_bps:
+            continue
+
+        if edge_buy_kalshi >= edge_sell_kalshi:
+            direction = "buy_kalshi"
+            edge_bps = edge_buy_kalshi
+            kalshi_price_cents = int(round(k_ask * 100))
+            kalshi_action = f"BUY YES @ {kalshi_price_cents}c"
+            poly_action = f"SELL YES @ {int(round(poly_bid * 100))}c on Polymarket"
+        else:
+            direction = "sell_kalshi"
+            edge_bps = edge_sell_kalshi
+            kalshi_price_cents = int(round(k_bid * 100))
+            kalshi_action = f"SELL YES @ {kalshi_price_cents}c"
+            poly_action = f"BUY YES @ {int(round(poly_ask * 100))}c on Polymarket"
+
+        out.append(
+            PolyOpportunity(
+                market_label=m.kalshi.title or m.poly.question,
+                category=infer_category(m.poly),
+                match_type=m.match_type,
+                match_confidence=m.match_confidence,
+                direction=direction,
+                kalshi_ticker=ticker,
+                kalshi_price_cents=kalshi_price_cents,
+                kalshi_yes_bid=k_bid,
+                kalshi_yes_ask=k_ask,
+                kalshi_liquidity=max(tob.yes_bid_size or 0, tob.yes_ask_size or 0),
+                kalshi_url=url_by.get(ticker, ""),
+                poly_market_id=m.poly.market_id,
+                poly_question=m.poly.question,
+                poly_yes_bid=poly_bid,
+                poly_yes_ask=poly_ask,
+                poly_liquidity_usd=m.poly.liquidity_usd,
+                poly_url=f"https://polymarket.com/event/{m.poly.slug}" if m.poly.slug else "https://polymarket.com",
+                edge_cents=edge_bps / 100.0,
+                edge_bps=edge_bps,
+                kalshi_action=kalshi_action,
+                poly_action=poly_action,
+                timestamp=now,
+            )
+        )
+
+    out.sort(key=lambda x: x.edge_bps, reverse=True)
+    return out

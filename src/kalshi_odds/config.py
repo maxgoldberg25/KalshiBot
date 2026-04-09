@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     min_edge_bps: float = Field(default=50.0, description="Min edge in basis points to alert")
     min_liquidity: int = Field(default=10, description="Min Kalshi liquidity (shares)")
     max_staleness_seconds: float = Field(default=60.0, description="Max data age in seconds")
+    poly_enabled: bool = Field(default=True, description="Enable Kalshi vs Polymarket arb scan")
+    poly_min_edge_bps: float = Field(default=20.0, description="Min edge in bps for PM arb")
+    poly_min_liquidity_usd: float = Field(default=100.0, description="Min PM liquidity in USD")
+    poly_match_threshold: float = Field(default=82.0, description="RapidFuzz threshold for PM matching (0-100)")
 
     # ── Persistence ─────────────────────────────────────────────────────────
     database_url: str = Field(default="sqlite+aiosqlite:///kalshi_odds.db")

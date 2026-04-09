@@ -20,10 +20,11 @@ from pydantic import BaseModel
 from kalshi_odds.adapters.kalshi import KalshiAdapter
 from kalshi_odds.adapters.odds_api import OddsAPIAdapter
 from kalshi_odds.adapters.odds_provider import create_odds_provider, FallbackOddsProvider
+from kalshi_odds.adapters.polymarket import PolymarketAdapter
 from kalshi_odds.config import Settings, get_settings
 from kalshi_odds.core.automapper import auto_map as run_auto_map
 from kalshi_odds.core.matcher import MarketMatcher
-from kalshi_odds.core.scan_runner import run_scan_cycle, run_multi_sport_scan
+from kalshi_odds.core.scan_runner import run_scan_cycle, run_multi_sport_scan, run_poly_scan
 from kalshi_odds.core.scanner import Scanner
 from kalshi_odds.core.sizing import kelly_shares
 from kalshi_odds.db import Repository
@@ -68,6 +69,7 @@ _state: dict[str, Any] = {
     "sports": [],
     "last_automap_scan": 0,
     "mapped_count": 0,
+    "poly_opportunities": [],
 }
 
 
@@ -133,6 +135,7 @@ async def run_one_scan(
     settings: Settings,
     kalshi: KalshiAdapter,
     odds_api,
+    polymarket: Optional[PolymarketAdapter],
     repo: Repository,
 ) -> tuple[int, Optional[str]]:
     """Run a scan with pre-existing connections. Returns (alert_count, error_message)."""
@@ -180,6 +183,18 @@ async def run_one_scan(
         if active_label:
             _state["active_odds_provider"] = active_label
         _save_opportunities_disk(opportunities)
+        if settings.poly_enabled and polymarket is not None:
+            try:
+                poly_opps = await run_poly_scan(
+                    kalshi,
+                    polymarket,
+                    min_edge_bps=settings.poly_min_edge_bps,
+                    min_liquidity_usd=settings.poly_min_liquidity_usd,
+                    match_threshold=settings.poly_match_threshold,
+                )
+                _state["poly_opportunities"] = [o.model_dump(mode="json") for o in poly_opps]
+            except Exception:
+                _state["poly_opportunities"] = []
 
         saved = 0
         for alert in all_alerts:
@@ -210,23 +225,25 @@ async def _run_standalone_scan(settings: Settings) -> tuple[int, Optional[str]]:
             base_url=settings.kalshi_base_url,
             requests_per_second=settings.kalshi_requests_per_second,
         ) as kalshi,
+        PolymarketAdapter() as polymarket,
         Repository(settings.database_url.split("///")[-1]) as repo,
     ):
         await odds_api.connect()
         try:
-            return await run_one_scan(settings, kalshi, odds_api, repo)
+            return await run_one_scan(settings, kalshi, odds_api, polymarket, repo)
         finally:
             await odds_api.close()
 
 
 _persistent_kalshi: Optional[KalshiAdapter] = None
 _persistent_odds: Optional[OddsAPIAdapter] = None
+_persistent_poly: Optional[PolymarketAdapter] = None
 _persistent_repo: Optional[Repository] = None
 
 
 @asynccontextmanager
 async def _dashboard_lifespan(app: FastAPI):
-    global _persistent_kalshi, _persistent_odds, _persistent_repo
+    global _persistent_kalshi, _persistent_odds, _persistent_poly, _persistent_repo
 
     s = get_settings()
     task: Optional[asyncio.Task] = None
@@ -239,12 +256,15 @@ async def _dashboard_lifespan(app: FastAPI):
             requests_per_second=s.kalshi_requests_per_second,
         )
         odds_api = create_odds_provider(s)
+        polymarket = PolymarketAdapter()
         repo = Repository(s.database_url.split("///")[-1])
         await kalshi.connect()
         await odds_api.connect()
+        await polymarket.connect()
         await repo.connect()
         _persistent_kalshi = kalshi
         _persistent_odds = odds_api
+        _persistent_poly = polymarket
         _persistent_repo = repo
 
         async def loop() -> None:
@@ -259,7 +279,7 @@ async def _dashboard_lifespan(app: FastAPI):
                         )
                         _state["last_automap_scan"] = scan_num
                     async with _scan_lock:
-                        await run_one_scan(settings, kalshi, odds_api, repo)
+                        await run_one_scan(settings, kalshi, odds_api, polymarket, repo)
                     scan_num += 1
                 except asyncio.CancelledError:
                     raise
@@ -285,6 +305,9 @@ async def _dashboard_lifespan(app: FastAPI):
         if _persistent_odds:
             await _persistent_odds.close()
             _persistent_odds = None
+        if _persistent_poly:
+            await _persistent_poly.close()
+            _persistent_poly = None
         if _persistent_repo:
             await _persistent_repo.close()
             _persistent_repo = None
@@ -328,6 +351,7 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
             "sports": _state.get("sports", s.sport_list),
             "mapped_count": _state.get("mapped_count", 0),
             "active_odds_provider": _state.get("active_odds_provider", ""),
+            "poly_opportunities": _state.get("poly_opportunities", []),
         }
 
     @app.post("/api/scan")
@@ -335,7 +359,7 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
         s = get_settings()
         async with _scan_lock:
             if _persistent_kalshi and _persistent_odds and _persistent_repo:
-                n, err = await run_one_scan(s, _persistent_kalshi, _persistent_odds, _persistent_repo)
+                n, err = await run_one_scan(s, _persistent_kalshi, _persistent_odds, _persistent_poly, _persistent_repo)
             else:
                 n, err = await _run_standalone_scan(s)
         if err:
@@ -428,6 +452,10 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
             "max_staleness_seconds": s.max_staleness_seconds,
             "auto_map_enabled": s.auto_map_enabled,
             "fuzzy_match_enabled": s.fuzzy_match_enabled,
+            "poly_enabled": s.poly_enabled,
+            "poly_min_edge_bps": s.poly_min_edge_bps,
+            "poly_min_liquidity_usd": s.poly_min_liquidity_usd,
+            "poly_match_threshold": s.poly_match_threshold,
         }
 
     @app.get("/api/alerts/recent")
