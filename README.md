@@ -20,10 +20,17 @@ pip install -e ".[dev]"
 cp .env.example .env
 # Edit .env — add Kalshi API keys and at least one odds API key
 
-# 4. Launch the dashboard
+# 4. (Optional) Build the shadcn/React dashboard UI
+cd web && npm install && npm run build && cd ..
+
+# 5. Launch the dashboard
 kalshi-odds dashboard
 # Open http://127.0.0.1:8080
 ```
+
+If `web/dist/` exists (after step 4), the server serves the **React + shadcn/ui** app (Hash routes: `/#/` home, `/#/scanner`). Otherwise it falls back to the legacy single-file template at `src/kalshi_odds/dashboard/templates/index.html`.
+
+**Dev (hot reload):** with the API on port 8080, run `cd web && npm run dev` (Vite proxies `/api` to `http://127.0.0.1:8080`). Open the URL Vite prints (usually `http://127.0.0.1:5173`).
 
 The dashboard auto-maps Kalshi game contracts to sportsbook events on startup and begins scanning immediately.
 
@@ -54,7 +61,10 @@ src/kalshi_odds/
 │   └── comparison.py         # Alert, Opportunity, Direction, Confidence
 ├── dashboard/
 │   ├── server.py              # FastAPI app — REST API + SPA serving
-│   └── templates/index.html   # Single-page app (Tabler + ApexCharts)
+│   └── templates/index.html   # Legacy SPA (Tabler + ApexCharts) if web/dist missing
+├── web/                       # Optional React + shadcn/ui dashboard (Vite)
+│   ├── src/                   # Home + Scanner pages, TanStack Query, Recharts
+│   └── package.json
 ├── config.py                  # Pydantic-settings (env-based config)
 ├── db.py                      # SQLite persistence via aiosqlite
 ├── execution.py               # Kalshi order placement
@@ -228,6 +238,45 @@ If positive, Kalshi is pricing the contract above the sportsbook's fair probabil
 ### Signal mode
 
 When Kalshi has no active market makers (empty orderbook), the scanner enters **signal mode**: it synthesizes a Kalshi price at ~90% of the sportsbook's no-vig probability — a common discount in thin markets to attract initial buyers. These opportunities are marked `~EST` in the dashboard with a full explanation. They are watchlist items only; do not execute them.
+
+---
+
+## Dashboard: How to read an opportunity row
+
+The **Opportunities** table compares **Kalshi** prices to **sportsbook consensus** (after removing vig where applicable). Each row is one actionable *view* of a game side (for example, one team’s moneyline on Kalshi vs books).
+
+### Badges before the game name
+
+| Badge | Meaning |
+|--------|--------|
+| **`~EST`** | **Estimated / signal mode.** Kalshi’s order book for this contract was **empty** (no live YES/NO bids and asks). The scanner **did not** use a real Kalshi market price. It **simulated** a Kalshi YES price at about **90%** of the sportsbook’s fair (no-vig) probability so you can still see *where* the market might be mispriced **if** Kalshi opened near that level. **Do not treat this as tradable on Kalshi** until there is a real book — use it as a **watchlist / research** signal only. |
+| **`THEODDSAPI`**, **`ODDSPAPI`**, **`ESPN`** | **Which feed supplied the sportsbook odds** used in this row’s math (after the app’s provider fallback chain). It does **not** mean “execute on that website”; it tells you **data provenance** for the fair-probability side. |
+
+Rows **without** `~EST` use a **live Kalshi top-of-book** (real bid/ask). Those are the only rows where **Execute** is available (and only if execution is enabled in `.env`).
+
+### Example row (decoded)
+
+Example:
+
+`~EST` `THEODDSAPI` — **AZ vs BAL** — **60.5¢** — **SELL Arizona Diamondbacks YES @ 76¢** — **Bet Arizona Diamondbacks ML on FanDuel** — **6** — **HIGH** — **1** — **1** — **watch only**
+
+| Column (concept) | What it means in this example |
+|------------------|--------------------------------|
+| **Game** | Short label for the event (here, Arizona vs Baltimore). |
+| **Edge** | **60.5¢** = modeled **edge per Kalshi share**, in cents, after the scanner’s buffers (slippage on Kalshi, friction on the sportsbook leg). Larger = more theoretical value *given the inputs*. |
+| **Kalshi action** | **SELL … YES @ 76¢** = the modeled instruction on Kalshi: sell YES at **76¢** because Kalshi looks **rich** vs the book’s fair probability (Kalshi implied prob higher than fair). |
+| **Hedge** | **Bet … ML on FanDuel** = the **manual** sportsbook leg that offsets the Kalshi position in theory (here, moneyline on FanDuel). You must place this yourself; the app does not auto-bet sportsbooks. |
+| **Books** | **6** = how many distinct sportsbook quotes contributed to the consensus / comparison for that opportunity (more books → more stable consensus, all else equal). |
+| **Conf** | **HIGH** = the scanner’s **confidence score** (edge size, freshness, liquidity, overround). **Note:** for `~EST` rows, Kalshi liquidity is **synthetic**, so treat confidence as **relative ranking**, not proof the trade is real. |
+| **Liq** | Kalshi-side **size** (shares) at the relevant price. In **`~EST`** mode this is **not** real market depth — it is a small placeholder so the row can appear when `min_liquidity` would otherwise filter it out. |
+| **Kelly** | Suggested **Kalshi share count** from the Kelly heuristic and your configured bankroll/caps. Again, for **`~EST`** this is **illustrative only** (no real book to fill against). |
+| **Action** | **`watch only`** = **Execute is disabled** for this row because it is **estimated** (`~EST`). **Never** use execution on synthetic rows. |
+
+**How to use this in practice**
+
+1. **If you see `~EST`:** use the row to **monitor** mispricing vs books. When Kalshi **lists real quotes**, refresh / wait for the next scan — the same mapping may produce a **non-estimated** row with real **Liq** and **Execute** (if enabled).
+2. **If there is no `~EST`:** the Kalshi prices are **live**; edge, Kelly, and Execute (if enabled) are based on the actual order book subject to your `min_edge_bps` / `min_liquidity` settings.
+3. **Sportsbook leg:** always **manual**; use the **Hedge** text as guidance, then verify lines and limits on the book before betting.
 
 ---
 

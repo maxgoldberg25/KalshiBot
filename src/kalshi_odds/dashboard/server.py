@@ -14,7 +14,8 @@ from pathlib import Path
 from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from kalshi_odds.adapters.kalshi import KalshiAdapter
@@ -57,6 +58,11 @@ AUTO_MAP_INTERVAL_SCANS = 360
 
 _templates_dir = Path(__file__).resolve().parent / "templates"
 _INDEX_HTML = _templates_dir / "index.html"
+# React + shadcn build (optional): repo_root/web/dist
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+_REACT_DIST = _REPO_ROOT / "web" / "dist"
+_REACT_INDEX = _REACT_DIST / "index.html"
+_REACT_ASSETS = _REACT_DIST / "assets"
 
 _scan_lock = asyncio.Lock()
 _state: dict[str, Any] = {
@@ -317,8 +323,13 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
     _ = settings_override
     app = FastAPI(title="Kalshi Odds Dashboard", lifespan=_dashboard_lifespan)
 
-    @app.get("/", response_class=HTMLResponse)
-    async def index() -> HTMLResponse:
+    if _REACT_ASSETS.is_dir():
+        app.mount("/assets", StaticFiles(directory=_REACT_ASSETS), name="react_assets")
+
+    @app.get("/", response_model=None)
+    async def index() -> FileResponse | HTMLResponse:
+        if _REACT_INDEX.is_file():
+            return FileResponse(_REACT_INDEX, media_type="text/html")
         html = _INDEX_HTML.read_text(encoding="utf-8")
         return HTMLResponse(html)
 
