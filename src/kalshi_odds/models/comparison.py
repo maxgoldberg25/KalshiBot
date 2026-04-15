@@ -136,3 +136,35 @@ class Opportunity(BaseModel):
         description="True when Kalshi has no active orderbook; price is synthetic at ~90% of fair value",
     )
     odds_source: str = Field(default="", description="Which odds provider served this opportunity")
+
+
+class PolyOpportunity(BaseModel):
+    """Kalshi vs Polymarket arbitrage candidate."""
+
+    market_label: str
+    category: str = Field(default="other", description="sports|politics|crypto|economy|other")
+    match_type: str = Field(default="fuzzy", description="sports_structured|fuzzy")
+    match_confidence: float = Field(default=0.0, ge=0, le=1)
+
+    direction: str = Field(description="buy_kalshi|sell_kalshi")
+
+    kalshi_ticker: str
+    kalshi_price_cents: int = Field(ge=0, le=100)
+    kalshi_yes_bid: float = Field(ge=0, le=1)
+    kalshi_yes_ask: float = Field(ge=0, le=1)
+    kalshi_liquidity: int = Field(ge=0)
+    kalshi_url: str = Field(default="")
+
+    poly_market_id: str
+    poly_question: str
+    poly_yes_bid: float = Field(ge=0, le=1)
+    poly_yes_ask: float = Field(ge=0, le=1)
+    poly_liquidity_usd: float = Field(ge=0)
+    poly_url: str = Field(default="")
+
+    edge_cents: float
+    edge_bps: float
+    kalshi_action: str
+    poly_action: str
+
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

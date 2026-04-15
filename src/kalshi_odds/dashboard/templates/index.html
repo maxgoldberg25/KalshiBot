@@ -225,6 +225,26 @@ footer{padding:1rem 1.5rem;font-size:.67rem;color:var(--kb-dim);text-align:cente
 
 /* PnL colors */
 .pos-green{color:var(--kb-green2)}.pos-red{color:var(--kb-red)}.neg{color:var(--kb-red)}.pos{color:var(--kb-green2)}
+
+/* Scanner layout */
+.scanner-page-hd{margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--kb-border)}
+.scanner-page-hd h2{font-size:1.15rem;font-weight:800;letter-spacing:-.02em;margin:0 0 .25rem;color:var(--kb-text)}
+.scanner-page-hd p{margin:0;font-size:.78rem;color:var(--kb-muted);max-width:52rem;line-height:1.5}
+.kb-section-label{font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--kb-muted);font-weight:700;margin:0 0 .5rem;padding-left:2px}
+.insight-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:.45rem .65rem}
+.insight-cell{background:var(--kb-surface2);border:1px solid rgba(26,42,61,.8);border-radius:8px;padding:.45rem .55rem;min-width:0}
+.insight-k{font-size:.58rem;text-transform:uppercase;letter-spacing:.06em;color:var(--kb-dim);font-weight:700;margin-bottom:2px}
+.insight-v{font-size:.78rem;font-weight:700;color:var(--kb-text);font-variant-numeric:tabular-nums;line-height:1.25;word-break:break-word}
+.insight-v.mono{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:600;color:var(--kb-accent2)}
+.insight-cell.wide{grid-column:span 2}
+@media(max-width:560px){.insight-cell.wide{grid-column:span 1}}
+.chart-card-title{font-size:.62rem;text-transform:uppercase;letter-spacing:.07em;color:var(--kb-muted);font-weight:700}
+.chart-empty{min-height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--kb-muted);font-size:.76rem;text-align:center;padding:1rem;gap:.35rem}
+.chart-empty svg{width:32px;height:32px;stroke:var(--kb-border2);fill:none;stroke-width:1.5;opacity:.85}
+.scanner-kpi-row{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin-top:.5rem}
+.scanner-kpi-pill{display:inline-flex;align-items:center;gap:.35rem;padding:.28rem .55rem;border-radius:8px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--kb-border);background:var(--kb-surface2);color:var(--kb-muted)}
+.scanner-kpi-pill.ok{border-color:rgba(16,185,129,.35);color:var(--kb-green2);background:rgba(16,185,129,.08)}
+.scanner-kpi-pill.warn{border-color:rgba(245,158,11,.35);color:var(--kb-yellow);background:rgba(245,158,11,.08)}
 </style>
 </head>
 <body>
@@ -323,6 +343,10 @@ footer{padding:1rem 1.5rem;font-size:.67rem;color:var(--kb-dim);text-align:cente
 <!-- ═══ PAGE: Scanner ═════════════════════════════ -->
 <div class="page" id="page-scanner">
   <div class="page-wrap">
+    <div class="scanner-page-hd">
+      <h2>Scanner</h2>
+      <p>Kalshi vs sportsbook edges, scan health, and positions. Use <strong>Scan now</strong> for an immediate pass; automatic scans follow your poll interval.</p>
+    </div>
 
     <!-- Error banner -->
     <div class="kb-banner" id="errBanner">
@@ -354,8 +378,34 @@ footer{padding:1rem 1.5rem;font-size:.67rem;color:var(--kb-dim);text-align:cente
       </div></div>
     </div>
 
+    <!-- Scanner insights (compact metrics) -->
+    <p class="kb-section-label">Scanner insights</p>
+    <div class="kb-card mb-3">
+      <div class="kb-card-body" style="padding:.75rem 1rem">
+        <div class="insight-grid" id="scannerInsightGrid">
+          <div class="insight-cell"><div class="insight-k">Scan status</div><div class="insight-v" id="siScanStatus">—</div></div>
+          <div class="insight-cell"><div class="insight-k">Last scan</div><div class="insight-v mono" id="siLastScan">—</div></div>
+          <div class="insight-cell"><div class="insight-k">Scans total</div><div class="insight-v" id="siScanCount">0</div></div>
+          <div class="insight-cell"><div class="insight-k">Mapped markets</div><div class="insight-v" id="siMapped">0</div></div>
+          <div class="insight-cell"><div class="insight-k">Opportunities</div><div class="insight-v" id="siOppCount">0</div></div>
+          <div class="insight-cell"><div class="insight-k">Odds credits</div><div class="insight-v" id="siCredits">—</div></div>
+          <div class="insight-cell"><div class="insight-k">Odds provider</div><div class="insight-v mono" id="siProvider">—</div></div>
+          <div class="insight-cell wide"><div class="insight-k">Sports in scope</div><div class="insight-v" id="siSports">—</div></div>
+          <div class="insight-cell"><div class="insight-k">Open positions</div><div class="insight-v" id="siOpenPos">0</div></div>
+          <div class="insight-cell"><div class="insight-k">Settled</div><div class="insight-v" id="siSettledPos">0</div></div>
+          <div class="insight-cell"><div class="insight-k">Mean edge</div><div class="insight-v mono" id="siMeanEdge">—</div></div>
+          <div class="insight-cell"><div class="insight-k">Max edge</div><div class="insight-v mono" id="siMaxEdge">—</div></div>
+          <div class="insight-cell"><div class="insight-k">Est. signals</div><div class="insight-v" id="siEstCount">0</div></div>
+          <div class="insight-cell"><div class="insight-k">Mean edge (bps)</div><div class="insight-v mono" id="siMeanBps">—</div></div>
+          <div class="insight-cell"><div class="insight-k">Poll interval</div><div class="insight-v mono" id="siPoll">—</div></div>
+          <div class="insight-cell wide"><div class="insight-k">Last scanner message</div><div class="insight-v mono" id="siLastErr" style="font-size:.68rem;font-weight:500;color:var(--kb-muted)">—</div></div>
+        </div>
+        <div class="scanner-kpi-row" id="scannerReadyRow" aria-label="Execution readiness"></div>
+      </div>
+    </div>
+
     <!-- Action bar -->
-    <div style="display:flex;align-items:center;gap:.55rem;margin-bottom:.75rem;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:.55rem;margin-bottom:.75rem;flex-wrap:wrap;border-top:1px solid var(--kb-border);padding-top:.75rem">
       <button type="button" class="kb-btn kb-btn-primary kb-btn-sm" id="btnScan">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         Scan now <span class="spinner" id="scanSpin"></span>
@@ -371,17 +421,57 @@ footer{padding:1rem 1.5rem;font-size:.67rem;color:var(--kb-dim);text-align:cente
     </div>
 
     <!-- Charts -->
+    <p class="kb-section-label" style="margin-top:.25rem">Charts</p>
     <div class="row-gap cols-2 mb-3">
       <div class="kb-card">
         <div class="kb-card-header"><h3>Scan History</h3><span class="kb-badge kb-badge-dim ms-auto" id="scanHistLabel">—</span></div>
-        <div class="kb-card-body"><div id="scanChart" style="min-height:160px"></div></div>
+        <div class="kb-card-body">
+          <div class="chart-card-title" style="margin:-.15rem 0 .35rem">Opportunities per completed scan</div>
+          <div id="scanChart" style="min-height:160px"></div>
+        </div>
       </div>
       <div class="kb-card">
         <div class="kb-card-header"><h3>Edge Distribution</h3></div>
-        <div class="kb-card-body"><div id="edgeChart" style="min-height:160px"></div></div>
+        <div class="kb-card-body">
+          <div class="chart-card-title" style="margin:-.15rem 0 .35rem">Current scan — edge width (¢)</div>
+          <div id="edgeChart" style="min-height:160px"></div>
+        </div>
+      </div>
+    </div>
+    <div class="row-gap cols-2 mb-3">
+      <div class="kb-card">
+        <div class="kb-card-header"><h3>Mapped &amp; credits</h3><span class="kb-badge kb-badge-dim ms-auto" id="mappedHistLabel">—</span></div>
+        <div class="kb-card-body">
+          <div class="chart-card-title" style="margin:-.15rem 0 .35rem">Per scan — mapped markets vs API credits remaining</div>
+          <div id="mappedCreditsChart" style="min-height:160px"></div>
+        </div>
+      </div>
+      <div class="kb-card">
+        <div class="kb-card-header"><h3>Confidence mix</h3></div>
+        <div class="kb-card-body">
+          <div class="chart-card-title" style="margin:-.15rem 0 .35rem">Share of opportunities by confidence</div>
+          <div id="confChart" style="min-height:200px"></div>
+        </div>
+      </div>
+    </div>
+    <div class="row-gap cols-2 mb-3">
+      <div class="kb-card">
+        <div class="kb-card-header"><h3>Edge quality vs volume</h3><span class="kb-badge kb-badge-dim ms-auto" id="edgeTrendLabel">—</span></div>
+        <div class="kb-card-body">
+          <div class="chart-card-title" style="margin:-.15rem 0 .35rem">Per completed scan — mean &amp; max edge (¢) vs opportunity count</div>
+          <div id="edgeTrendChart" style="min-height:176px"></div>
+        </div>
+      </div>
+      <div class="kb-card">
+        <div class="kb-card-header"><h3>Opportunity composition</h3><span class="kb-badge kb-badge-dim ms-auto" id="compHistLabel">—</span></div>
+        <div class="kb-card-body">
+          <div class="chart-card-title" style="margin:-.15rem 0 .35rem">Live vs estimated rows per scan (stacked counts)</div>
+          <div id="compChart" style="min-height:176px"></div>
+        </div>
       </div>
     </div>
 
+    <p class="kb-section-label">Opportunities</p>
     <!-- Estimated signals explanation callout -->
     <div class="est-callout" id="estimatedCallout">
       <div class="est-callout-header">
@@ -426,6 +516,7 @@ footer{padding:1rem 1.5rem;font-size:.67rem;color:var(--kb-dim);text-align:cente
       </div>
     </div>
 
+    <p class="kb-section-label">Positions</p>
     <!-- Positions + Settled -->
     <div class="row-gap cols-2 mb-3">
       <div class="kb-card">
@@ -445,6 +536,7 @@ footer{padding:1rem 1.5rem;font-size:.67rem;color:var(--kb-dim);text-align:cente
     </div>
 
     <!-- Activity log -->
+    <p class="kb-section-label">Activity</p>
     <div class="kb-card">
       <div class="kb-card-header"><h3>Activity Log</h3></div>
       <ul class="log-list" id="logList">
@@ -511,7 +603,8 @@ function edgeCls(c){return c>=2?"hi":c>=1?"md":"lo"}
 
 var pollSec=60,nextIn=60,sortCol=null,sortAsc=true,openConfirmIdx=-1;
 var actLog=[],scanHist=[],lastState=null,lastHealth=null;
-var scanChartInst=null,edgeChartInst=null;
+var scanChartInst=null,edgeChartInst=null,mappedCreditsChartInst=null,confChartInst=null,edgeTrendChartInst=null,compChartInst=null;
+var SCAN_HIST_MAX=72;
 
 /* ── Navigation ─────────────────────────────────── */
 function navigate(page){
@@ -521,7 +614,9 @@ function navigate(page){
     a.classList.toggle("active",a.getAttribute("data-page")===page);
   });
   window.location.hash=page;
-  if(page==="scanner"){setTimeout(function(){drawScanChart();drawEdgeChart()},50)}
+  if(page==="scanner"){setTimeout(function(){
+    drawScanChart();drawEdgeChart();drawMappedCreditsChart();drawConfidenceChart();drawEdgeTrendChart();drawCompChart();
+  },50)}
 }
 window.navigate=navigate;
 D.querySelectorAll("#mainNav .nav-link").forEach(function(a){
@@ -530,7 +625,10 @@ D.querySelectorAll("#mainNav .nav-link").forEach(function(a){
 var initPage=(window.location.hash||"#home").replace("#","");
 if(!$("page-"+initPage))initPage="home";
 navigate(initPage);
-window.addEventListener("hashchange",function(){var p=(window.location.hash||"#home").replace("#","");if($("page-"+p))navigate(p)});
+window.addEventListener("hashchange",function(){
+  var p=(window.location.hash||"#home").replace("#","");
+  if($("page-"+p))navigate(p);
+});
 
 /* ── Toast ──────────────────────────────────────── */
 function toast(msg,type){
@@ -574,7 +672,7 @@ function drawScanChart(){
   var el=$("scanChart");if(!el)return;
   if(scanHist.length<2){
     if(scanChartInst){scanChartInst.destroy();scanChartInst=null}
-    el.innerHTML='<div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--kb-muted);font-size:.78rem">Scan data will appear here</div>';
+    el.innerHTML='<div class="chart-empty" style="min-height:160px"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>After two completed scans, opportunity counts appear here.</span></div>';
     return;
   }
   var cats=scanHist.map(function(s){return s.label});
@@ -599,7 +697,7 @@ function drawEdgeChart(){
   var opps=lastState?lastState.opportunities||[]:[];
   if(!opps.length){
     if(edgeChartInst){edgeChartInst.destroy();edgeChartInst=null}
-    el.innerHTML='<div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--kb-muted);font-size:.78rem">Run a scan to see edge distribution</div>';
+    el.innerHTML='<div class="chart-empty" style="min-height:160px"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>No opportunities in the latest state — run a scan to plot edge buckets.</span></div>';
     return;
   }
   var cats=["0–1¢","1–2¢","2–3¢","3–5¢","5¢+"];
@@ -618,6 +716,166 @@ function drawEdgeChart(){
   });
   if(edgeChartInst){edgeChartInst.updateOptions(opts)}
   else{edgeChartInst=new ApexCharts(el,opts);edgeChartInst.render()}
+}
+
+function drawMappedCreditsChart(){
+  var el=$("mappedCreditsChart");if(!el)return;
+  if(scanHist.length<2){
+    if(mappedCreditsChartInst){mappedCreditsChartInst.destroy();mappedCreditsChartInst=null}
+    el.innerHTML='<div class="chart-empty" style="min-height:160px"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span>Two or more scans needed to chart mapping progress and credit usage.</span></div>';
+    var ml=$("mappedHistLabel");if(ml)ml.textContent="—";
+    return;
+  }
+  var cats=scanHist.map(function(s){return s.label});
+  var mappedData=scanHist.map(function(s){return s.mapped!=null?s.mapped:0});
+  var hasCredits=false,credData=scanHist.map(function(s){
+    var c=s.credits;if(c==null||isNaN(c))return null;hasCredits=true;return c;
+  });
+  if(!hasCredits)credData=scanHist.map(function(){return null});
+  var series=[{name:"Mapped markets",type:"area",data:mappedData}];
+  if(hasCredits)series.push({name:"API credits left",type:"line",data:credData});
+  var yaxis=[{
+    labels:{style:{colors:"#607d96",fontSize:"10px"},formatter:function(v){return Math.round(v)}},
+    min:0,title:{text:"Mapped",style:{color:"#607d96",fontSize:"10px",fontWeight:600}}
+  }];
+  if(hasCredits){
+    yaxis.push({
+      opposite:true,
+      min:0,
+      labels:{style:{colors:"#a78bfa",fontSize:"10px"},formatter:function(v){return Math.round(v)}},
+      title:{text:"Credits",style:{color:"#a78bfa",fontSize:"10px",fontWeight:600}}
+    });
+  }
+  var colors=hasCredits?["#3b82f6","#8b5cf6"]:["#3b82f6"];
+  var grad={shadeIntensity:1,opacityFrom:.28,opacityTo:.02,stops:[0,92,100],colorStops:[{offset:0,color:"#3b82f6",opacity:.28},{offset:100,color:"#3b82f6",opacity:.02}]};
+  var opts=Object.assign({},APEX_COMMON,{
+    chart:Object.assign({},APEX_COMMON.chart,{type:"line",height:176,stacked:false}),
+    stroke:{curve:"smooth",width:hasCredits?[2,2]:2,dashArray:hasCredits?[0,5]:0},
+    fill:{type:"gradient",gradient:grad,opacity:hasCredits?[0.28,0]:0.28},
+    series:series,
+    colors:colors,
+    xaxis:{categories:cats,labels:{style:{colors:"#607d96",fontSize:"10px",fontFamily:"'JetBrains Mono',monospace"},rotate:-30,maxHeight:48},axisBorder:{show:false},axisTicks:{show:false}},
+    yaxis:yaxis,
+    markers:{size:hasCredits?[4,3]:4,strokeWidth:2,hover:{sizeOffset:2}},
+    legend:{show:hasCredits,position:"top",horizontalAlign:"right",fontSize:"11px",labels:{colors:"#607d96"}},
+    dataLabels:{enabled:false},
+  });
+  if(mappedCreditsChartInst){mappedCreditsChartInst.updateOptions(opts,true)}
+  else{mappedCreditsChartInst=new ApexCharts(el,opts);mappedCreditsChartInst.render()}
+  var ml=$("mappedHistLabel");if(ml)ml.textContent=scanHist.length+" pts";
+}
+
+function drawConfidenceChart(){
+  var el=$("confChart");if(!el)return;
+  var opps=lastState?lastState.opportunities||[]:[];
+  if(!opps.length){
+    if(confChartInst){confChartInst.destroy();confChartInst=null}
+    el.innerHTML='<div class="chart-empty" style="min-height:200px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><span>No opportunities — confidence breakdown appears when the scanner finds rows.</span></div>';
+    return;
+  }
+  var hi=0,med=0,lo=0;
+  for(var i=0;i<opps.length;i++){
+    var c=(opps[i].confidence||"").toLowerCase();
+    if(c==="high")hi++;else if(c==="med"||c==="medium")med++;else lo++;
+  }
+  var labels=["High","Med","Low / other"];
+  var series=[hi,med,lo];
+  var opts=Object.assign({},APEX_COMMON,{
+    chart:Object.assign({},APEX_COMMON.chart,{type:"donut",height:210}),
+    series:series,
+    labels:labels,
+    colors:["#10b981","#f59e0b","#607d96"],
+    plotOptions:{pie:{donut:{size:"62%",labels:{show:true,total:{show:true,label:"Rows",fontSize:"11px",color:"#607d96",formatter:function(){return String(opps.length)}}}}}},
+    stroke:{width:2,colors:["#0d1520"]},
+    legend:{position:"bottom",fontSize:"11px",labels:{colors:"#607d96"}},
+    dataLabels:{enabled:true,style:{fontSize:"11px",fontWeight:700,colors:["#080d14"]}},
+  });
+  if(confChartInst){confChartInst.updateOptions(opts)}
+  else{confChartInst=new ApexCharts(el,opts);confChartInst.render()}
+}
+
+function aggregateOpportunities(opps){
+  var n=opps.length;
+  if(!n)return{meanEdge:0,maxEdge:0,meanBps:0,est:0};
+  var sum=0,sumb=0,maxE=0,est=0;
+  for(var i=0;i<n;i++){
+    var o=opps[i];
+    var ec=Number(o.edge_cents)||0;
+    var eb=Number(o.edge_bps);
+    if(isNaN(eb))eb=ec*100;
+    sum+=ec;sumb+=eb;if(ec>maxE)maxE=ec;
+    if(o.is_estimated)est++;
+  }
+  return{meanEdge:sum/n,maxEdge:maxE,meanBps:sumb/n,est:est};
+}
+
+function drawEdgeTrendChart(){
+  var el=$("edgeTrendChart");if(!el)return;
+  if(scanHist.length<2){
+    if(edgeTrendChartInst){edgeTrendChartInst.destroy();edgeTrendChartInst=null}
+    el.innerHTML='<div class="chart-empty" style="min-height:176px"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>Complete at least two scans to plot edge quality against opportunity volume.</span></div>';
+    var etl=$("edgeTrendLabel");if(etl)etl.textContent="—";
+    return;
+  }
+  var cats=scanHist.map(function(s){return s.label});
+  var meanE=scanHist.map(function(s){return s.meanEdge!=null?s.meanEdge:0});
+  var maxE=scanHist.map(function(s){return s.maxEdge!=null?s.maxEdge:0});
+  var oppsC=scanHist.map(function(s){return s.opps!=null?s.opps:0});
+  var opts=Object.assign({},APEX_COMMON,{
+    chart:Object.assign({},APEX_COMMON.chart,{type:"line",height:176,stacked:false}),
+    series:[
+      {name:"Mean edge (¢)",type:"line",data:meanE},
+      {name:"Max edge (¢)",type:"line",data:maxE},
+      {name:"Opportunities",type:"column",data:oppsC}
+    ],
+    stroke:{curve:"smooth",width:[2,2,0],dashArray:[0,4,0]},
+    fill:{type:"solid",opacity:[0,0,0.35]},
+    colors:["#34d399","#f59e0b","#3b82f6"],
+    xaxis:{categories:cats,labels:{style:{colors:"#607d96",fontSize:"10px",fontFamily:"'JetBrains Mono',monospace"},rotate:-30,maxHeight:48},axisBorder:{show:false},axisTicks:{show:false}},
+    yaxis:[
+      {seriesName:["Mean edge (¢)","Max edge (¢)"],showAlways:true,labels:{style:{colors:"#607d96",fontSize:"10px"},formatter:function(v){return (Math.round(v*10)/10).toFixed(1)}},min:0,title:{text:"Edge (¢)",style:{color:"#607d96",fontSize:"10px",fontWeight:600}}},
+      {seriesName:"Opportunities",opposite:true,labels:{style:{colors:"#60a5fa",fontSize:"10px"},formatter:function(v){return Math.round(v)}},min:0,title:{text:"Count",style:{color:"#60a5fa",fontSize:"10px",fontWeight:600}}}
+    ],
+    plotOptions:{bar:{columnWidth:"42%",borderRadius:4}},
+    markers:{size:[3,3,0],strokeWidth:2,hover:{sizeOffset:2}},
+    legend:{show:true,position:"top",horizontalAlign:"right",fontSize:"11px",labels:{colors:"#607d96"}},
+    dataLabels:{enabled:false},
+  });
+  if(edgeTrendChartInst){edgeTrendChartInst.updateOptions(opts,true)}
+  else{edgeTrendChartInst=new ApexCharts(el,opts);edgeTrendChartInst.render()}
+  var etl=$("edgeTrendLabel");if(etl)etl.textContent=scanHist.length+" pts";
+}
+
+function drawCompChart(){
+  var el=$("compChart");if(!el)return;
+  if(scanHist.length<2){
+    if(compChartInst){compChartInst.destroy();compChartInst=null}
+    el.innerHTML='<div class="chart-empty" style="min-height:176px"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg><span>Two or more scans needed to compare live vs estimated signal mix.</span></div>';
+    var cl=$("compHistLabel");if(cl)cl.textContent="—";
+    return;
+  }
+  var cats=scanHist.map(function(s){return s.label});
+  var estArr=scanHist.map(function(s){return s.estCount!=null?s.estCount:0});
+  var liveArr=scanHist.map(function(s,i){
+    var tot=s.opps!=null?s.opps:0;var e=estArr[i];return Math.max(0,tot-e);
+  });
+  var opts=Object.assign({},APEX_COMMON,{
+    chart:Object.assign({},APEX_COMMON.chart,{type:"bar",height:176,stacked:true}),
+    series:[
+      {name:"Live book",data:liveArr},
+      {name:"Estimated",data:estArr}
+    ],
+    colors:["#3b82f6","#f59e0b"],
+    xaxis:{categories:cats,labels:{style:{colors:"#607d96",fontSize:"10px",fontFamily:"'JetBrains Mono',monospace"},rotate:-30,maxHeight:48},axisBorder:{show:false},axisTicks:{show:false}},
+    yaxis:{labels:{style:{colors:"#607d96",fontSize:"10px"},formatter:function(v){return Math.round(v)}},min:0,title:{text:"Opportunity rows",style:{color:"#607d96",fontSize:"10px",fontWeight:600}}},
+    plotOptions:{bar:{horizontal:false,columnWidth:"58%",borderRadius:3}},
+    legend:{position:"top",horizontalAlign:"right",fontSize:"11px",labels:{colors:"#607d96"}},
+    dataLabels:{enabled:false},
+    tooltip:{theme:"dark",shared:true,intersect:false},
+  });
+  if(compChartInst){compChartInst.updateOptions(opts,true)}
+  else{compChartInst=new ApexCharts(el,opts);compChartInst.render()}
+  var cl=$("compHistLabel");if(cl)cl.textContent=scanHist.length+" scans";
 }
 
 /* ── Sort ───────────────────────────────────────── */
@@ -787,6 +1045,62 @@ function renderSettings(cfg){
     row("Fuzzy match",cfg.fuzzy_match_enabled?"Enabled":"Disabled","Use fuzzy string matching for team names");
 }
 
+/* ── Scanner insights strip ───────────────────── */
+function renderScannerInsights(d){
+  var st=$("siScanStatus");
+  if(st){
+    if(d.is_scanning)st.innerHTML='<span class="kb-badge kb-badge-yellow">Scanning</span>';
+    else st.innerHTML='<span class="kb-badge kb-badge-dim">Idle</span>';
+  }
+  var ls=$("siLastScan");
+  if(ls)ls.textContent=d.last_scan_iso?fmtTime(d.last_scan_iso)+" · "+fmtAgo(d.last_scan_iso):"—";
+  var sc=$("siScanCount");if(sc)sc.textContent=String(d.scan_count||0);
+  var mp=$("siMapped");if(mp)mp.textContent=String(d.mapped_count!=null?d.mapped_count:0);
+  var oc=$("siOppCount");if(oc)oc.textContent=String((d.opportunities||[]).length);
+  var cr=$("siCredits");
+  if(cr){
+    if(d.odds_requests_remaining!=null&&!isNaN(Number(d.odds_requests_remaining)))cr.textContent=String(d.odds_requests_remaining);
+    else cr.textContent="—";
+  }
+  var pr=$("siProvider");if(pr)pr.textContent=(d.active_odds_provider&&String(d.active_odds_provider).trim())||"—";
+  var sp=$("siSports"),sports=d.sports||[];
+  if(sp){
+    if(!sports.length)sp.textContent="None configured";
+    else{
+      var pretty=sports.map(function(s){return s.replace(/_/g," ").replace(/\b\w/g,function(c){return c.toUpperCase()})});
+      var joined=pretty.join(", ");
+      sp.textContent=joined.length>140?pretty.slice(0,6).join(", ")+" +"+(pretty.length-6)+" more":joined;
+    }
+  }
+  var op=$("siOpenPos"),stt=$("siSettledPos");
+  if(op)op.textContent=String(d.pnl?d.pnl.open_count:0);
+  if(stt)stt.textContent=String(d.pnl?d.pnl.settled_count:0);
+  var er=$("siLastErr");
+  if(er){
+    var le=d.last_error?String(d.last_error):"";
+    if(!le||le.indexOf("Waiting")>=0)er.textContent="No blocking errors";
+    else er.textContent=le.length>140?le.substring(0,137)+"…":le;
+  }
+  var opps=d.opportunities||[];
+  var agg=aggregateOpportunities(opps);
+  var me=$("siMeanEdge");if(me)me.textContent=opps.length?(Math.round(agg.meanEdge*10)/10).toFixed(1)+"¢":"—";
+  var mx=$("siMaxEdge");if(mx)mx.textContent=opps.length?(Math.round(agg.maxEdge*10)/10).toFixed(1)+"¢":"—";
+  var mb=$("siMeanBps");if(mb)mb.textContent=opps.length?String(Math.round(agg.meanBps)):"—";
+  var ec=$("siEstCount");if(ec)ec.textContent=String(agg.est);
+  var pl=$("siPoll");if(pl)pl.textContent=(d.poll_interval_seconds!=null?String(d.poll_interval_seconds):"—")+"s";
+  var rr=$("scannerReadyRow");
+  if(rr){
+    var k=d.kalshi_configured,o=d.odds_configured,ex=d.execution_enabled;
+    var all=k&&o&&ex;
+    rr.innerHTML=
+      '<span class="scanner-kpi-pill'+(all?" ok":" warn")+'" title="Kalshi + odds + execution flags from /api/state">'+
+      (all?"Ready to trade":"Not fully enabled")+'</span>'+
+      '<span class="scanner-kpi-pill">Kalshi '+(k?"ON":"OFF")+'</span>'+
+      '<span class="scanner-kpi-pill">Odds '+(o?"ON":"OFF")+'</span>'+
+      '<span class="scanner-kpi-pill">Execute '+(ex?"ON":"OFF")+'</span>';
+  }
+}
+
 /* ── Load state ─────────────────────────────────── */
 var prevScanCount=-1;
 async function loadState(){
@@ -808,7 +1122,7 @@ async function loadState(){
     $("scanSub").textContent=d.last_scan_iso?fmtAgo(d.last_scan_iso):"Waiting...";
     $("scanCount").textContent=String(d.scan_count||0);
     $("hScanCount").textContent=String(d.scan_count||0);
-    if(d.mapped_count)$("mappedInfo").textContent=d.mapped_count+" mapped";
+    $("mappedInfo").textContent=(d.mapped_count!=null&&d.mapped_count!==undefined)?d.mapped_count+" mapped":"— mapped";
     $("hMapped").textContent=String(d.mapped_count||0);
     $("hOppCount").textContent=String((d.opportunities||[]).length);
 
@@ -838,12 +1152,28 @@ async function loadState(){
 
     var sc=d.scan_count||0;
     if(sc!==prevScanCount&&sc>0){
-      scanHist.push({opps:(d.opportunities||[]).length,label:fmtTime(d.last_scan_iso||new Date().toISOString()),err:!!hasErr});
-      if(scanHist.length>24)scanHist.shift();
+      var credSnap=d.odds_requests_remaining;
+      var opList=d.opportunities||[];
+      var ag=aggregateOpportunities(opList);
+      scanHist.push({
+        opps:opList.length,
+        label:fmtTime(d.last_scan_iso||new Date().toISOString()),
+        err:!!hasErr,
+        mapped:d.mapped_count!=null?Number(d.mapped_count):0,
+        credits:credSnap==null||isNaN(Number(credSnap))?null:Number(credSnap),
+        meanEdge:ag.meanEdge,
+        maxEdge:ag.maxEdge,
+        meanBps:ag.meanBps,
+        estCount:ag.est
+      });
+      if(scanHist.length>SCAN_HIST_MAX)scanHist.shift();
       prevScanCount=sc;
     }
+    renderScannerInsights(d);
     renderOpps(d);renderPositions(d);
-    if($("page-scanner").classList.contains("active")){drawScanChart();drawEdgeChart()}
+    if($("page-scanner").classList.contains("active")){
+      drawScanChart();drawEdgeChart();drawMappedCreditsChart();drawConfidenceChart();drawEdgeTrendChart();drawCompChart();
+    }
   }catch(e){
     var b=$("errBanner");if(b){b.className="kb-banner err";$("errText").textContent="Dashboard error: "+e.message}
   }
@@ -904,7 +1234,14 @@ setInterval(function(){
 
 /* ── Init ───────────────────────────────────────── */
 loadState();loadHealth();loadConfig();
-window.addEventListener("resize",function(){if(scanChartInst)scanChartInst.render();if(edgeChartInst)edgeChartInst.render()});
+window.addEventListener("resize",function(){
+  if(scanChartInst)scanChartInst.render();
+  if(edgeChartInst)edgeChartInst.render();
+  if(mappedCreditsChartInst)mappedCreditsChartInst.render();
+  if(confChartInst)confChartInst.render();
+  if(edgeTrendChartInst)edgeTrendChartInst.render();
+  if(compChartInst)compChartInst.render();
+});
 
 })();
 </script>

@@ -2,8 +2,8 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
-dist/
-build/
+/dist/
+/build/
 *.egg
 
 # Virtual environment
@@ -34,6 +34,9 @@ kalshi.key
 *.jsonl
 *.log
 .last_opportunities.json
+
+# Node (shadcn dashboard)
+web/node_modules/
 
 # OS
 .DS_Store
