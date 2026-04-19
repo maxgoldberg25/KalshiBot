@@ -1056,15 +1056,17 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
     # Security headers (first, so they apply to all responses, including CORS preflights).
     app.add_middleware(SecurityHeadersMiddleware, secure_cookie=s.session_cookie_secure)
 
-    # CORS — only enabled when explicit origins are configured.
+    # CORS — enable when explicit origins and/or a regex (e.g. all *.vercel.app deploys) is set.
     origins = s.cors_origin_list
-    if origins:
+    origin_regex = s.cors_origin_regex_stripped
+    if origins or origin_regex:
         app.add_middleware(
             CORSMiddleware,
             allow_origins=origins,
+            allow_origin_regex=origin_regex or None,
             allow_credentials=True,
             allow_methods=["GET", "POST", "OPTIONS"],
-            allow_headers=["Content-Type"],
+            allow_headers=["Content-Type", "Accept", "Authorization"],
             max_age=600,
         )
 

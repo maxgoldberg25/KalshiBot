@@ -95,7 +95,14 @@ class Settings(BaseSettings):
     # ── Web / security ──────────────────────────────────────────────────────
     cors_origins: str = Field(
         default="",
-        description="Comma-separated list of allowed origins for CORS (exact matches only). Leave empty to disable cross-origin requests.",
+        description="Comma-separated allowed origins for CORS (exact matches). Use with cors_origin_regex for preview URLs.",
+    )
+    cors_origin_regex: str = Field(
+        default="",
+        description=(
+            "Optional regex for allowed Origin (e.g. https://.*\\.vercel\\.app for all Vercel deploys). "
+            "Set this OR cors_origins when the SPA is on another domain."
+        ),
     )
     session_cookie_secure: bool = Field(
         default=False,
@@ -143,6 +150,10 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def cors_origin_regex_stripped(self) -> str:
+        return (self.cors_origin_regex or "").strip()
 
     @property
     def admin_bootstrap_list(self) -> list[str]:
