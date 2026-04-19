@@ -45,6 +45,67 @@ class Repository:
         assert self._conn is not None
 
         await self._conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL UNIQUE,
+                email TEXT UNIQUE,
+                password_salt TEXT NOT NULL,
+                password_hash TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                last_login_at TEXT,
+                is_admin INTEGER NOT NULL DEFAULT 0,
+                is_active INTEGER NOT NULL DEFAULT 1
+            )
+        """)
+        await self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)"
+        )
+        for column_sql in (
+            "ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1",
+        ):
+            try:
+                await self._conn.execute(column_sql)
+            except Exception:
+                pass
+
+        await self._conn.execute("""
+            CREATE TABLE IF NOT EXISTS waitlist (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                email TEXT,
+                reason TEXT,
+                status TEXT NOT NULL DEFAULT 'pending',
+                created_at TEXT NOT NULL,
+                decided_at TEXT,
+                decided_by_user_id INTEGER,
+                invite_token TEXT UNIQUE,
+                invite_expires_at TEXT,
+                ip_hash TEXT,
+                FOREIGN KEY(decided_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+            )
+        """)
+        await self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_waitlist_status_created ON waitlist(status, created_at)"
+        )
+        await self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_waitlist_username ON waitlist(username)"
+        )
+
+        await self._conn.execute("""
+            CREATE TABLE IF NOT EXISTS sessions (
+                token TEXT PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        """)
+        await self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id)"
+        )
+
+        await self._conn.execute("""
             CREATE TABLE IF NOT EXISTS kalshi_contracts (
                 contract_id TEXT PRIMARY KEY,
                 kalshi_market_id TEXT,
@@ -367,6 +428,367 @@ class Repository:
             winning_count=winning,
             losing_count=losing,
         )
+
+    async def create_user(
+        self,
+        username: str,
+        email: Optional[str],
+        password_salt: str,
+        password_hash: str,
+    ) -> dict:
+        """Insert a user. Raises sqlite3.IntegrityError on duplicate username/email."""
+        assert self._conn is not None
+        now = datetime.now(timezone.utc).isoformat()
+        await self._conn.execute(
+            """
+            INSERT INTO users (username, email, password_salt, password_hash, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (username, email, password_salt, password_hash, now),
+        )
+        await self._conn.commit()
+        cur = await self._conn.execute("SELECT last_insert_rowid()")
+        row = await cur.fetchone()
+        user_id = int(row[0]) if row else 0
+        return {"id": user_id, "username": username, "email": email, "created_at": now}
+
+    async def get_user_by_username(self, username: str) -> Optional[dict]:
+        assert self._conn is not None
+        cur = await self._conn.execute(
+            "SELECT id, username, email, password_salt, password_hash, created_at, "
+            "last_login_at, is_admin, is_active FROM users WHERE username = ?",
+            (username,),
+        )
+        row = await cur.fetchone()
+        if not row:
+            return None
+        return {
+            "id": int(row[0]),
+            "username": row[1],
+            "email": row[2],
+            "password_salt": row[3],
+            "password_hash": row[4],
+            "created_at": row[5],
+            "last_login_at": row[6],
+            "is_admin": bool(row[7]),
+            "is_active": bool(row[8]),
+        }
+
+    async def get_user_by_id(self, user_id: int) -> Optional[dict]:
+        assert self._conn is not None
+        cur = await self._conn.execute(
+            "SELECT id, username, email, created_at, last_login_at, is_admin, is_active "
+            "FROM users WHERE id = ?",
+            (user_id,),
+        )
+        row = await cur.fetchone()
+        if not row:
+            return None
+        return {
+            "id": int(row[0]),
+            "username": row[1],
+            "email": row[2],
+            "created_at": row[3],
+            "last_login_at": row[4],
+            "is_admin": bool(row[5]),
+            "is_active": bool(row[6]),
+        }
+
+    async def touch_user_login(self, user_id: int) -> None:
+        assert self._conn is not None
+        await self._conn.execute(
+            "UPDATE users SET last_login_at = ? WHERE id = ?",
+            (datetime.now(timezone.utc).isoformat(), user_id),
+        )
+        await self._conn.commit()
+
+    async def create_session(self, user_id: int, token: str, expires_at: datetime) -> None:
+        assert self._conn is not None
+        await self._conn.execute(
+            "INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
+            (
+                token,
+                user_id,
+                datetime.now(timezone.utc).isoformat(),
+                expires_at.isoformat(),
+            ),
+        )
+        await self._conn.commit()
+
+    async def get_session_user(self, token: str) -> Optional[dict]:
+        """Return the user owning this session token if the session is not expired and active."""
+        assert self._conn is not None
+        cur = await self._conn.execute(
+            """
+            SELECT u.id, u.username, u.email, u.created_at, u.last_login_at,
+                   u.is_admin, u.is_active, s.expires_at
+            FROM sessions s
+            JOIN users u ON u.id = s.user_id
+            WHERE s.token = ?
+            """,
+            (token,),
+        )
+        row = await cur.fetchone()
+        if not row:
+            return None
+        try:
+            expires = datetime.fromisoformat(row[7])
+        except (TypeError, ValueError):
+            return None
+        if expires < datetime.now(timezone.utc):
+            await self.delete_session(token)
+            return None
+        if not bool(row[6]):
+            # deactivated user - invalidate all their sessions
+            await self._conn.execute(
+                "DELETE FROM sessions WHERE user_id = ?", (int(row[0]),)
+            )
+            await self._conn.commit()
+            return None
+        return {
+            "id": int(row[0]),
+            "username": row[1],
+            "email": row[2],
+            "created_at": row[3],
+            "last_login_at": row[4],
+            "is_admin": bool(row[5]),
+            "is_active": bool(row[6]),
+        }
+
+    async def delete_session(self, token: str) -> None:
+        assert self._conn is not None
+        await self._conn.execute("DELETE FROM sessions WHERE token = ?", (token,))
+        await self._conn.commit()
+
+    async def purge_expired_sessions(self) -> int:
+        assert self._conn is not None
+        now_iso = datetime.now(timezone.utc).isoformat()
+        cur = await self._conn.execute(
+            "DELETE FROM sessions WHERE expires_at < ?", (now_iso,)
+        )
+        await self._conn.commit()
+        return cur.rowcount or 0
+
+    # ── Waitlist & admin ────────────────────────────────────────────────────
+
+    async def create_waitlist_entry(
+        self,
+        *,
+        username: str,
+        email: Optional[str],
+        reason: Optional[str],
+        ip_hash: Optional[str],
+    ) -> dict:
+        assert self._conn is not None
+        now = datetime.now(timezone.utc).isoformat()
+        await self._conn.execute(
+            """
+            INSERT INTO waitlist (username, email, reason, status, created_at, ip_hash)
+            VALUES (?, ?, ?, 'pending', ?, ?)
+            """,
+            (username, email, reason, now, ip_hash),
+        )
+        await self._conn.commit()
+        cur = await self._conn.execute("SELECT last_insert_rowid()")
+        row = await cur.fetchone()
+        return {
+            "id": int(row[0]) if row else 0,
+            "username": username,
+            "email": email,
+            "reason": reason,
+            "status": "pending",
+            "created_at": now,
+        }
+
+    async def count_recent_waitlist_by_ip(self, ip_hash: str, since_iso: str) -> int:
+        assert self._conn is not None
+        cur = await self._conn.execute(
+            "SELECT COUNT(*) FROM waitlist WHERE ip_hash = ? AND created_at >= ?",
+            (ip_hash, since_iso),
+        )
+        row = await cur.fetchone()
+        return int(row[0]) if row else 0
+
+    async def list_waitlist(self, status: Optional[str] = None) -> list[dict]:
+        assert self._conn is not None
+        if status:
+            cur = await self._conn.execute(
+                "SELECT id, username, email, reason, status, created_at, decided_at, "
+                "decided_by_user_id, invite_token, invite_expires_at "
+                "FROM waitlist WHERE status = ? ORDER BY created_at DESC",
+                (status,),
+            )
+        else:
+            cur = await self._conn.execute(
+                "SELECT id, username, email, reason, status, created_at, decided_at, "
+                "decided_by_user_id, invite_token, invite_expires_at "
+                "FROM waitlist ORDER BY created_at DESC"
+            )
+        rows = await cur.fetchall()
+        return [
+            {
+                "id": int(r[0]),
+                "username": r[1],
+                "email": r[2],
+                "reason": r[3],
+                "status": r[4],
+                "created_at": r[5],
+                "decided_at": r[6],
+                "decided_by_user_id": r[7],
+                "invite_token": r[8],
+                "invite_expires_at": r[9],
+            }
+            for r in rows
+        ]
+
+    async def get_waitlist_entry(self, entry_id: int) -> Optional[dict]:
+        assert self._conn is not None
+        cur = await self._conn.execute(
+            "SELECT id, username, email, reason, status, created_at, decided_at, "
+            "decided_by_user_id, invite_token, invite_expires_at "
+            "FROM waitlist WHERE id = ?",
+            (entry_id,),
+        )
+        r = await cur.fetchone()
+        if not r:
+            return None
+        return {
+            "id": int(r[0]),
+            "username": r[1],
+            "email": r[2],
+            "reason": r[3],
+            "status": r[4],
+            "created_at": r[5],
+            "decided_at": r[6],
+            "decided_by_user_id": r[7],
+            "invite_token": r[8],
+            "invite_expires_at": r[9],
+        }
+
+    async def approve_waitlist_entry(
+        self,
+        entry_id: int,
+        *,
+        decided_by_user_id: int,
+        invite_token: str,
+        invite_expires_at: datetime,
+    ) -> Optional[dict]:
+        assert self._conn is not None
+        now = datetime.now(timezone.utc).isoformat()
+        cur = await self._conn.execute(
+            """
+            UPDATE waitlist
+            SET status = 'approved',
+                decided_at = ?,
+                decided_by_user_id = ?,
+                invite_token = ?,
+                invite_expires_at = ?
+            WHERE id = ? AND status = 'pending'
+            """,
+            (now, decided_by_user_id, invite_token, invite_expires_at.isoformat(), entry_id),
+        )
+        await self._conn.commit()
+        if cur.rowcount == 0:
+            return None
+        return await self.get_waitlist_entry(entry_id)
+
+    async def reject_waitlist_entry(
+        self, entry_id: int, *, decided_by_user_id: int
+    ) -> Optional[dict]:
+        assert self._conn is not None
+        now = datetime.now(timezone.utc).isoformat()
+        cur = await self._conn.execute(
+            """
+            UPDATE waitlist
+            SET status = 'rejected', decided_at = ?, decided_by_user_id = ?
+            WHERE id = ? AND status = 'pending'
+            """,
+            (now, decided_by_user_id, entry_id),
+        )
+        await self._conn.commit()
+        if cur.rowcount == 0:
+            return None
+        return await self.get_waitlist_entry(entry_id)
+
+    async def consume_invite_token(self, token: str) -> Optional[dict]:
+        """Return the waitlist entry if the token is valid and unused; mark as consumed."""
+        assert self._conn is not None
+        cur = await self._conn.execute(
+            "SELECT id, username, email, status, invite_expires_at "
+            "FROM waitlist WHERE invite_token = ?",
+            (token,),
+        )
+        row = await cur.fetchone()
+        if not row:
+            return None
+        entry_id, username, email, status, expires_iso = row
+        if status != "approved":
+            return None
+        try:
+            expires = datetime.fromisoformat(expires_iso) if expires_iso else None
+        except (TypeError, ValueError):
+            expires = None
+        if expires is None or expires < datetime.now(timezone.utc):
+            return None
+        now = datetime.now(timezone.utc).isoformat()
+        upd = await self._conn.execute(
+            "UPDATE waitlist SET status = 'consumed', decided_at = ? "
+            "WHERE id = ? AND status = 'approved'",
+            (now, int(entry_id)),
+        )
+        await self._conn.commit()
+        if upd.rowcount == 0:
+            return None
+        return {"id": int(entry_id), "username": username, "email": email}
+
+    async def list_users(self) -> list[dict]:
+        assert self._conn is not None
+        cur = await self._conn.execute(
+            "SELECT id, username, email, created_at, last_login_at, is_admin, is_active "
+            "FROM users ORDER BY created_at DESC"
+        )
+        rows = await cur.fetchall()
+        return [
+            {
+                "id": int(r[0]),
+                "username": r[1],
+                "email": r[2],
+                "created_at": r[3],
+                "last_login_at": r[4],
+                "is_admin": bool(r[5]),
+                "is_active": bool(r[6]),
+            }
+            for r in rows
+        ]
+
+    async def set_user_admin(self, user_id: int, is_admin: bool) -> None:
+        assert self._conn is not None
+        await self._conn.execute(
+            "UPDATE users SET is_admin = ? WHERE id = ?",
+            (1 if is_admin else 0, user_id),
+        )
+        await self._conn.commit()
+
+    async def set_user_active(self, user_id: int, is_active: bool) -> None:
+        assert self._conn is not None
+        await self._conn.execute(
+            "UPDATE users SET is_active = ? WHERE id = ?",
+            (1 if is_active else 0, user_id),
+        )
+        if not is_active:
+            await self._conn.execute(
+                "DELETE FROM sessions WHERE user_id = ?", (user_id,)
+            )
+        await self._conn.commit()
+
+    async def promote_admin_by_username(self, username: str) -> bool:
+        assert self._conn is not None
+        cur = await self._conn.execute(
+            "UPDATE users SET is_admin = 1 WHERE LOWER(username) = LOWER(?)",
+            (username,),
+        )
+        await self._conn.commit()
+        return (cur.rowcount or 0) > 0
 
     async def __aenter__(self) -> Repository:
         await self.connect()
