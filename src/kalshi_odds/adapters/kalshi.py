@@ -25,6 +25,40 @@ from tenacity import (
 from kalshi_odds.models.kalshi import KalshiContract, KalshiTopOfBook, OutcomeSide, cents_to_decimal
 
 
+def _resolve_kalshi_private_key_file(configured_path: str) -> Path:
+    """
+    Resolve path to PEM on disk. Render documents secret files under /etc/secrets/
+    and a copy in the service root with the same basename — try both.
+    """
+    raw = (configured_path or "").strip()
+    if not raw:
+        raise ValueError(
+            "Kalshi private key: set KALSHI_ODDS_KALSHI_PRIVATE_KEY_PEM "
+            "or KALSHI_ODDS_KALSHI_PRIVATE_KEY_PATH."
+        )
+    primary = Path(raw)
+    candidates: list[Path] = [primary]
+    if primary.name:
+        if raw.startswith("/etc/secrets/"):
+            candidates.append(Path.cwd() / primary.name)
+        if not primary.is_absolute():
+            candidates.append(Path("/etc/secrets") / primary.name)
+    tried: list[str] = []
+    for cand in candidates:
+        s = str(cand)
+        if s in tried:
+            continue
+        tried.append(s)
+        if cand.is_file():
+            return cand
+    raise FileNotFoundError(
+        "Kalshi private key not found. Tried: "
+        + ", ".join(tried)
+        + ". On Render, upload the key under Environment → Secret Files, "
+        "or set KALSHI_ODDS_KALSHI_PRIVATE_KEY_PEM (full PEM text)."
+    )
+
+
 class KalshiAdapter:
     """Read-only Kalshi API adapter with RSA auth."""
 
@@ -56,13 +90,7 @@ class KalshiAdapter:
                 )
             key_data = pem.encode("utf-8")
         else:
-            key_path = Path(self._private_key_path)
-            if not key_path.exists():
-                raise FileNotFoundError(
-                    f"Kalshi private key not found: {key_path}. "
-                    "Either place the PEM file on disk and set KALSHI_ODDS_KALSHI_PRIVATE_KEY_PATH, "
-                    "or set KALSHI_ODDS_KALSHI_PRIVATE_KEY_PEM (see .env.example)."
-                )
+            key_path = _resolve_kalshi_private_key_file(self._private_key_path)
             key_data = key_path.read_bytes()
         self._private_key = serialization.load_pem_private_key(key_data, password=None)  # type: ignore
 
