@@ -11,10 +11,31 @@
 #   export KALSHI_BOOTSTRAP_PASS='your-secure-password'
 #   ./scripts/bootstrap-register.sh
 #
+# If you use a non-default port, either export KALSHI_ODDS_DASHBOARD_PORT (matches .env)
+# or set the full base URL: export KALSHI_DASHBOARD_URL=http://127.0.0.1:9000
+#
 set -euo pipefail
 
-PORT="${KALSHI_DASHBOARD_PORT:-8080}"
-BASE="${KALSHI_DASHBOARD_URL:-http://127.0.0.1:${PORT}}"
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+# Port / base URL: same names as the Python app (.env uses KALSHI_ODDS_* prefix).
+_port_from_dotenv() {
+  local f="$REPO_ROOT/.env"
+  [[ -f "$f" ]] || return 0
+  grep -E '^[[:space:]]*KALSHI_ODDS_DASHBOARD_PORT=' "$f" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '\r' | tr -d " '\""
+}
+
+if [[ -n "${KALSHI_DASHBOARD_URL:-}" ]]; then
+  BASE="${KALSHI_DASHBOARD_URL}"
+  BASE="${BASE%/}"
+else
+  PORT="${KALSHI_ODDS_DASHBOARD_PORT:-${KALSHI_DASHBOARD_PORT:-}}"
+  if [[ -z "$PORT" ]]; then
+    PORT="$(_port_from_dotenv)" || true
+  fi
+  PORT="${PORT:-8080}"
+  BASE="http://127.0.0.1:${PORT}"
+fi
 
 USER="${KALSHI_BOOTSTRAP_USER:-}"
 PASS="${KALSHI_BOOTSTRAP_PASS:-}"
@@ -29,10 +50,26 @@ BODY="$(python3 -c 'import json, sys; print(json.dumps({"username": sys.argv[1],
 TMP="$(mktemp)"
 trap 'rm -f "$TMP"' EXIT
 
-code="$(curl -sS -o "$TMP" -w "%{http_code}" -X POST "${BASE}/api/auth/register" \
+set +e
+code="$(curl -sS --connect-timeout 3 -o "$TMP" -w "%{http_code}" -X POST "${BASE}/api/auth/register" \
   -H "Content-Type: application/json" \
   -c "${KALSHI_COOKIE_JAR:-cookies.txt}" \
   -d "$BODY")"
+curl_ec=$?
+set -e
+
+if [[ "$curl_ec" -ne 0 ]]; then
+  echo "" >&2
+  echo "Could not reach the dashboard at ${BASE} (curl exit ${curl_ec})." >&2
+  echo "" >&2
+  echo "In another terminal, start the server from the repo root:" >&2
+  echo "  ./venv/bin/kalshi-odds dashboard" >&2
+  echo "  # or: kalshi-odds dashboard" >&2
+  echo "" >&2
+  echo "If you changed the port in .env, this script reads KALSHI_ODDS_DASHBOARD_PORT from .env," >&2
+  echo "or set explicitly:  export KALSHI_DASHBOARD_URL=http://127.0.0.1:YOUR_PORT" >&2
+  exit 1
+fi
 
 cat "$TMP"
 echo ""
