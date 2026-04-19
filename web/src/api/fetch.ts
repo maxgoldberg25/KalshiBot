@@ -10,6 +10,25 @@ export const API_BASE_URL = RAW_BASE.replace(/\/+$/, "")
 
 const api = (path: string) => `${API_BASE_URL}${path}`
 
+/** Same as fetch, but turns browser "Failed to fetch" into an actionable message (CORS / wrong API URL). */
+const apiFetch = async (path: string, init?: RequestInit): Promise<Response> => {
+  const url = api(path)
+  try {
+    return await fetch(url, init)
+  } catch (e) {
+    if (e instanceof TypeError) {
+      const crossOrigin =
+        "If the UI is on Vercel (or another domain) and the API on Render, set VITE_API_BASE_URL on Vercel to your API origin (https://…, no trailing slash), rebuild, and on the API set KALSHI_ODDS_CORS_ORIGINS to your exact site origin (e.g. https://your-app.vercel.app). For cookies across sites use KALSHI_ODDS_SESSION_COOKIE_SECURE=true and KALSHI_ODDS_SESSION_COOKIE_SAMESITE=none."
+      const sameOrigin =
+        "If the API runs locally, start it (e.g. kalshiinsider dashboard on port 8080) and use npm run dev so /api is proxied, or set VITE_API_BASE_URL."
+      throw new Error(
+        `Cannot reach ${url}. ${API_BASE_URL ? crossOrigin : sameOrigin} (${e.message})`,
+      )
+    }
+    throw e
+  }
+}
+
 const BASE_INIT: RequestInit = { credentials: "include" }
 
 const asApiError = async (r: Response, fallback: string): Promise<never> => {
@@ -24,19 +43,19 @@ const asApiError = async (r: Response, fallback: string): Promise<never> => {
 }
 
 export async function fetchState(): Promise<DashboardState> {
-  const r = await fetch(api("/api/state"), BASE_INIT)
+  const r = await apiFetch("/api/state", BASE_INIT)
   if (!r.ok) throw new Error(`state ${r.status}`)
   return r.json() as Promise<DashboardState>
 }
 
 export async function fetchHealth(): Promise<HealthResponse> {
-  const r = await fetch(api("/api/health"), BASE_INIT)
+  const r = await apiFetch("/api/health", BASE_INIT)
   if (!r.ok) throw new Error(`health ${r.status}`)
   return r.json() as Promise<HealthResponse>
 }
 
 export async function postScan(): Promise<{ ok: boolean; alerts?: number; error?: string }> {
-  const r = await fetch(api("/api/scan"), { method: "POST", ...BASE_INIT })
+  const r = await apiFetch("/api/scan", { method: "POST", ...BASE_INIT })
   return r.json() as Promise<{ ok: boolean; alerts?: number; error?: string }>
 }
 
@@ -48,7 +67,7 @@ export async function fetchTradesWatch(
     min_notional: String(minNotional),
     fetch_limit: String(fetchLimit),
   })
-  const r = await fetch(api(`/api/trades/watch?${sp}`), BASE_INIT)
+  const r = await apiFetch(`/api/trades/watch?${sp}`, BASE_INIT)
   if (!r.ok) throw new Error(`trades watch ${r.status}`)
   return r.json() as Promise<TradesWatchResponse>
 }
@@ -71,7 +90,7 @@ export type MeResponse = {
 }
 
 export const fetchMe = async (): Promise<MeResponse> => {
-  const r = await fetch(api("/api/auth/me"), BASE_INIT)
+  const r = await apiFetch("/api/auth/me", BASE_INIT)
   if (!r.ok) throw new Error(`me ${r.status}`)
   return (await r.json()) as MeResponse
 }
@@ -80,7 +99,7 @@ export const postLogin = async (
   username: string,
   password: string,
 ): Promise<AuthUser> => {
-  const r = await fetch(api("/api/auth/login"), {
+  const r = await apiFetch("/api/auth/login", {
     method: "POST",
     ...BASE_INIT,
     headers: JSON_HEADERS,
@@ -99,7 +118,7 @@ export type RegisterInput = {
 }
 
 export const postRegister = async (input: RegisterInput): Promise<AuthUser> => {
-  const r = await fetch(api("/api/auth/register"), {
+  const r = await apiFetch("/api/auth/register", {
     method: "POST",
     ...BASE_INIT,
     headers: JSON_HEADERS,
@@ -116,7 +135,7 @@ export const postRegister = async (input: RegisterInput): Promise<AuthUser> => {
 }
 
 export const postLogout = async (): Promise<void> => {
-  await fetch(api("/api/auth/logout"), { method: "POST", ...BASE_INIT })
+  await apiFetch("/api/auth/logout", { method: "POST", ...BASE_INIT })
 }
 
 // ── Waitlist ───────────────────────────────────────────────────────────────
@@ -143,7 +162,7 @@ export type WaitlistEntry = {
 export const postWaitlist = async (
   input: WaitlistApplication,
 ): Promise<{ ok: true; status: string; id?: number }> => {
-  const r = await fetch(api("/api/waitlist"), {
+  const r = await apiFetch("/api/waitlist", {
     method: "POST",
     ...BASE_INIT,
     headers: JSON_HEADERS,
@@ -163,7 +182,7 @@ export const fetchAdminWaitlist = async (
   statusFilter?: string,
 ): Promise<WaitlistEntry[]> => {
   const qs = statusFilter ? `?status_filter=${encodeURIComponent(statusFilter)}` : ""
-  const r = await fetch(api(`/api/admin/waitlist${qs}`), BASE_INIT)
+  const r = await apiFetch(`/api/admin/waitlist${qs}`, BASE_INIT)
   if (!r.ok) return asApiError(r, "Could not load waitlist")
   return (await r.json()) as WaitlistEntry[]
 }
@@ -171,7 +190,7 @@ export const fetchAdminWaitlist = async (
 export const approveWaitlistEntry = async (
   id: number,
 ): Promise<WaitlistEntry> => {
-  const r = await fetch(api(`/api/admin/waitlist/${id}/approve`), {
+  const r = await apiFetch(`/api/admin/waitlist/${id}/approve`, {
     method: "POST",
     ...BASE_INIT,
   })
@@ -183,7 +202,7 @@ export const approveWaitlistEntry = async (
 export const rejectWaitlistEntry = async (
   id: number,
 ): Promise<WaitlistEntry> => {
-  const r = await fetch(api(`/api/admin/waitlist/${id}/reject`), {
+  const r = await apiFetch(`/api/admin/waitlist/${id}/reject`, {
     method: "POST",
     ...BASE_INIT,
   })
@@ -193,13 +212,13 @@ export const rejectWaitlistEntry = async (
 }
 
 export const fetchAdminUsers = async (): Promise<AuthUser[]> => {
-  const r = await fetch(api("/api/admin/users"), BASE_INIT)
+  const r = await apiFetch("/api/admin/users", BASE_INIT)
   if (!r.ok) return asApiError(r, "Could not load users")
   return (await r.json()) as AuthUser[]
 }
 
 export const setUserActive = async (id: number, active: boolean): Promise<void> => {
-  const r = await fetch(api(`/api/admin/users/${id}/active`), {
+  const r = await apiFetch(`/api/admin/users/${id}/active`, {
     method: "POST",
     ...BASE_INIT,
     headers: JSON_HEADERS,
@@ -209,7 +228,7 @@ export const setUserActive = async (id: number, active: boolean): Promise<void> 
 }
 
 export const setUserAdmin = async (id: number, isAdmin: boolean): Promise<void> => {
-  const r = await fetch(api(`/api/admin/users/${id}/admin`), {
+  const r = await apiFetch(`/api/admin/users/${id}/admin`, {
     method: "POST",
     ...BASE_INIT,
     headers: JSON_HEADERS,
