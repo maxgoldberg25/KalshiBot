@@ -3,19 +3,17 @@
 Uses persistent API connections across scan cycles and auto-maps on startup.
 """
 
-from __future__ import annotations
-
 import asyncio
 import json
 import time
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
 
 import sqlite3
 
-from fastapi import Cookie, Depends, FastAPI, HTTPException, Request, Response
+from fastapi import Body, Cookie, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -759,25 +757,28 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
         dry_run: bool = True
 
     @app.post("/api/execute")
-    async def api_execute(body: ExecuteBody, user: dict = Depends(require_admin)) -> dict:
+    async def api_execute(
+        payload: ExecuteBody = Body(...),
+        user: dict = Depends(require_admin),
+    ) -> dict:
         _ = user
         raw = _state.get("opportunities") or _load_opportunities_from_disk()
         if not raw:
             raise HTTPException(400, "No opportunities. Run scan first.")
-        if body.index < 1 or body.index > len(raw):
-            raise HTTPException(400, f"Invalid index {body.index}")
-        opp = Opportunity.model_validate(raw[body.index - 1])
+        if payload.index < 1 or payload.index > len(raw):
+            raise HTTPException(400, f"Invalid index {payload.index}")
+        opp = Opportunity.model_validate(raw[payload.index - 1])
         s = get_settings()
         db_path = s.database_url.split("///")[-1]
         async with Repository(db_path) as repo:
             try:
                 return await place_opportunity_order(
                     opp,
-                    body.shares,
-                    dry_run=body.dry_run,
+                    payload.shares,
+                    dry_run=payload.dry_run,
                     settings=s,
                     repo=repo,
-                    save_position=not body.dry_run,
+                    save_position=not payload.dry_run,
                 )
             except Exception as e:
                 raise HTTPException(500, str(e)) from e
@@ -900,15 +901,16 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
     # ── Waitlist (public) ──────────────────────────────────────────────
     @app.post("/api/waitlist")
     async def api_waitlist_apply(
-        body: WaitlistApplication, request: Request
+        request: Request,
+        payload: WaitlistApplication = Body(...),
     ) -> dict:
         if _persistent_repo is None:
             raise HTTPException(503, "Database not ready")
         ip = client_ip(request)
         rate_limit_or_raise(WAITLIST_LIMITER, key=f"waitlist:{ip}")
-        username = validate_username(body.username)
-        email = validate_email(body.email)
-        reason = (body.reason or "").strip()[:1000] or None
+        username = validate_username(payload.username)
+        email = validate_email(payload.email)
+        reason = (payload.reason or "").strip()[:1000] or None
         # Prevent duplicate application for an existing active account
         existing_user = await _persistent_repo.get_user_by_username(username)
         if existing_user:
@@ -931,21 +933,23 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
     # ── Auth endpoints ─────────────────────────────────────────────────
     @app.post("/api/auth/register")
     async def api_register(
-        body: AuthCredentials, response: Response, request: Request
+        request: Request,
+        response: Response,
+        payload: AuthCredentials = Body(...),
     ) -> dict:
         if _persistent_repo is None:
             raise HTTPException(503, "Database not ready")
         cfg = get_settings()
         rate_limit_or_raise(REGISTER_LIMITER, key=f"register:{client_ip(request)}")
 
-        username = validate_username(body.username)
-        email = validate_email(body.email)
-        password = validate_password(body.password)
+        username = validate_username(payload.username)
+        email = validate_email(payload.email)
+        password = validate_password(payload.password)
 
         # Invite-gated registration (default). Public registration requires explicit opt-in.
         invite_entry: Optional[dict] = None
         if not cfg.public_registration_enabled:
-            token_in = (body.invite_token or "").strip()
+            token_in = (payload.invite_token or "").strip()
             if not token_in:
                 raise HTTPException(
                     403,
@@ -981,18 +985,20 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
 
     @app.post("/api/auth/login")
     async def api_login(
-        body: LoginCredentials, response: Response, request: Request
+        request: Request,
+        response: Response,
+        payload: LoginCredentials = Body(...),
     ) -> dict:
         if _persistent_repo is None:
             raise HTTPException(503, "Database not ready")
         ip = client_ip(request)
         rate_limit_or_raise(LOGIN_LIMITER, key=f"login:{ip}")
-        username = (body.username or "").strip()
-        if not username or not body.password:
+        username = (payload.username or "").strip()
+        if not username or not payload.password:
             raise HTTPException(400, "Username and password required")
         row = await _persistent_repo.get_user_by_username(username)
         invalid = not row or not verify_password(
-            body.password, row["password_salt"], row["password_hash"]
+            payload.password, row["password_salt"], row["password_hash"]
         )
         if invalid:
             # Also count login attempts by username to slow targeted brute force.
@@ -1087,24 +1093,28 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
 
     @app.post("/api/admin/users/{user_id}/active")
     async def api_admin_set_active(
-        user_id: int, body: SetBoolBody, admin: dict = Depends(require_admin)
+        user_id: int,
+        payload: SetBoolBody = Body(...),
+        admin: dict = Depends(require_admin),
     ) -> dict:
         if _persistent_repo is None:
             raise HTTPException(503, "Database not ready")
-        if user_id == admin["id"] and not body.value:
+        if user_id == admin["id"] and not payload.value:
             raise HTTPException(400, "You cannot deactivate your own account.")
-        await _persistent_repo.set_user_active(user_id, body.value)
+        await _persistent_repo.set_user_active(user_id, payload.value)
         return {"ok": True}
 
     @app.post("/api/admin/users/{user_id}/admin")
     async def api_admin_set_admin(
-        user_id: int, body: SetBoolBody, admin: dict = Depends(require_admin)
+        user_id: int,
+        payload: SetBoolBody = Body(...),
+        admin: dict = Depends(require_admin),
     ) -> dict:
         if _persistent_repo is None:
             raise HTTPException(503, "Database not ready")
-        if user_id == admin["id"] and not body.value:
+        if user_id == admin["id"] and not payload.value:
             raise HTTPException(400, "You cannot remove your own admin role.")
-        await _persistent_repo.set_user_admin(user_id, body.value)
+        await _persistent_repo.set_user_admin(user_id, payload.value)
         return {"ok": True}
 
     return app

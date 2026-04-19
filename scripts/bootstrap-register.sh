@@ -75,11 +75,33 @@ cat "$TMP"
 echo ""
 echo "HTTP ${code}"
 
+# Back-compat: older server builds may (incorrectly) expect a query param named `payload`.
+if [[ "$code" == "422" ]] && grep -q '"loc":\["query","payload"\]' "$TMP"; then
+  LEGACY_PAYLOAD="$(python3 -c 'import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))' "$BODY")"
+  code="$(curl -sS --connect-timeout 3 -o "$TMP" -w "%{http_code}" -X POST "${BASE}/api/auth/register?payload=${LEGACY_PAYLOAD}" \
+    -H "Content-Type: application/json" \
+    -c "${KALSHI_COOKIE_JAR:-cookies.txt}")"
+  echo ""
+  echo "Retried legacy payload mode"
+  cat "$TMP"
+  echo ""
+  echo "HTTP ${code}"
+fi
+
 if [[ "$code" == "404" ]]; then
   echo "" >&2
   echo "404: /api/auth/register not found. Use this repo's package, e.g. from repo root:" >&2
   echo "  pip install -e ." >&2
   echo "then restart: kalshi-odds dashboard" >&2
+  exit 1
+fi
+
+if [[ "$code" == "422" ]]; then
+  echo "" >&2
+  echo "422: JSON payload was rejected by the server." >&2
+  echo "If the auto-retry above did not succeed, reinstall/restart from repo root:" >&2
+  echo "  ./venv/bin/python -m pip install -e ." >&2
+  echo "  ./venv/bin/kalshi-odds dashboard" >&2
   exit 1
 fi
 

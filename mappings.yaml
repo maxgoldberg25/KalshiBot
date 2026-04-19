@@ -532,7 +532,7 @@ markets:
     contract_id: KXMLBGAME-26APR191605CWSATH-CWS
     side: 'YES'
   odds:
-    event_id: c3b12d49874633d7b722325998bebdd3
+    event_id: bf75db04c73633ad4f6241bd5ae2d3eb
     market_type: h2h
     selection: Chicago White Sox
 - market_key: mlb_20260419_1605cwsath_ath
@@ -540,7 +540,7 @@ markets:
     contract_id: KXMLBGAME-26APR191605CWSATH-ATH
     side: 'YES'
   odds:
-    event_id: c3b12d49874633d7b722325998bebdd3
+    event_id: bf75db04c73633ad4f6241bd5ae2d3eb
     market_type: h2h
     selection: Athletics
 - market_key: mlb_20260419_1610toraz_tor
@@ -628,7 +628,7 @@ markets:
     contract_id: KXMLBGAME-26APR191335SFWSH-WSH
     side: 'YES'
   odds:
-    event_id: ff3a4cea8f327d320fac1af61a34e8c3
+    event_id: 1048fb9b5524c70651232a93456ec26c
     market_type: h2h
     selection: Washington Nationals
 - market_key: mlb_20260419_1335sfwsh_sf
@@ -636,7 +636,7 @@ markets:
     contract_id: KXMLBGAME-26APR191335SFWSH-SF
     side: 'YES'
   odds:
-    event_id: ff3a4cea8f327d320fac1af61a34e8c3
+    event_id: 1048fb9b5524c70651232a93456ec26c
     market_type: h2h
     selection: San Francisco Giants
 - market_key: mlb_20260419_1335tbpit_tb
@@ -847,35 +847,3 @@ markets:
     event_id: 9b611b49a26ba77a07349b2b50bab4ad
     market_type: h2h
     selection: Pittsburgh Pirates
-- market_key: mlb_20260418_1605cwsath_cws
-  kalshi:
-    contract_id: KXMLBGAME-26APR181605CWSATH-CWS
-    side: 'YES'
-  odds:
-    event_id: c3b12d49874633d7b722325998bebdd3
-    market_type: h2h
-    selection: Chicago White Sox
-- market_key: mlb_20260418_1605cwsath_ath
-  kalshi:
-    contract_id: KXMLBGAME-26APR181605CWSATH-ATH
-    side: 'YES'
-  odds:
-    event_id: c3b12d49874633d7b722325998bebdd3
-    market_type: h2h
-    selection: Athletics
-- market_key: mlb_20260418_1605sfwsh_wsh
-  kalshi:
-    contract_id: KXMLBGAME-26APR181605SFWSH-WSH
-    side: 'YES'
-  odds:
-    event_id: ff3a4cea8f327d320fac1af61a34e8c3
-    market_type: h2h
-    selection: Washington Nationals
-- market_key: mlb_20260418_1605sfwsh_sf
-  kalshi:
-    contract_id: KXMLBGAME-26APR181605SFWSH-SF
-    side: 'YES'
-  odds:
-    event_id: ff3a4cea8f327d320fac1af61a34e8c3
-    market_type: h2h
-    selection: San Francisco Giants
