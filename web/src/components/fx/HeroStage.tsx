@@ -36,7 +36,7 @@ const StatPill = ({
   children: ReactNode
   accent?: "positive" | "negative"
 }) => (
-  <div className="group relative flex min-w-[150px] flex-col rounded-xl border border-border/60 bg-card/50 px-4 py-3 backdrop-blur-sm transition-colors hover:border-primary/40">
+  <div className="group relative flex min-w-0 w-full flex-col rounded-xl border border-border/60 bg-card/50 px-3 py-3 backdrop-blur-sm transition-colors hover:border-primary/40 sm:px-4">
     <span className="mb-1 flex items-center gap-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
       {icon}
       {label}
@@ -68,7 +68,7 @@ export const HeroStage = ({
   return (
     <section className="relative overflow-hidden border-b border-border/40 bg-gradient-to-b from-card/40 to-background">
       <div
-        className="bg-grid absolute inset-0 opacity-[0.18] mask-fade-b"
+        className="pointer-events-none bg-grid absolute inset-0 opacity-[0.18] mask-fade-b"
         aria-hidden
       />
       <div
@@ -85,8 +85,8 @@ export const HeroStage = ({
       />
 
       <div className="relative mx-auto grid max-w-6xl gap-10 px-4 pb-12 pt-14 lg:grid-cols-[1.1fr_1fr] lg:pt-16">
-        <div className="flex flex-col gap-6 animate-fade-up">
-          <div className="flex items-center gap-2">
+        <div className="relative z-10 flex min-w-0 flex-col gap-6 animate-fade-up">
+          <div className="flex flex-wrap items-center gap-2 gap-y-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-primary">
               <Sparkles className="size-3" aria-hidden />
               Real-time arbitrage engine
@@ -145,15 +145,9 @@ export const HeroStage = ({
 
           <div className="flex flex-wrap gap-2.5">
             <Button asChild size="lg" className="gap-2 shadow-lg shadow-primary/20">
-              <NavLink to="/scanner">
-                <BarChart3 className="size-4" aria-hidden />
-                Open Scanner
-              </NavLink>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="gap-2">
               <NavLink to="/insider">
                 <ShieldAlert className="size-4" aria-hidden />
-                Insider watch
+                Open Insider watch
               </NavLink>
             </Button>
             {onScan ? (
@@ -171,7 +165,7 @@ export const HeroStage = ({
             ) : null}
           </div>
 
-          <div className="mt-2 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+          <div className="mt-2 grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3 [&>*]:min-w-0">
             <StatPill
               label="Live opps"
               icon={<TrendingUp className="size-3" aria-hidden />}
@@ -200,17 +194,17 @@ export const HeroStage = ({
         </div>
 
         <div
-          className="relative animate-fade-up"
+          className="relative z-0 mt-4 min-w-0 animate-fade-up lg:mt-0"
           style={{ animationDelay: "120ms" }}
         >
-          <div className="relative rounded-2xl border border-border/60 bg-card/70 p-5 shadow-2xl shadow-primary/5 backdrop-blur-md">
+          <div className="relative z-10 rounded-2xl border border-border/60 bg-card/70 p-5 shadow-2xl shadow-primary/5 backdrop-blur-md">
             <div
               aria-hidden
               className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/10 via-transparent to-sky-500/10 opacity-60"
             />
             <LiveEdgeChart liveOpps={liveOpps} />
-            <div className="relative mt-4 grid grid-cols-3 gap-3 border-t border-border/50 pt-4 text-center">
-              <div>
+            <div className="relative mt-4 grid grid-cols-3 gap-2 border-t border-border/50 pt-4 text-center sm:gap-3 [&>*]:min-w-0">
+              <div className="min-w-0">
                 <div className="text-[0.6rem] uppercase tracking-widest text-muted-foreground">
                   Avg latency
                 </div>
@@ -218,7 +212,7 @@ export const HeroStage = ({
                   <CountUp value={142} suffix="ms" />
                 </div>
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="text-[0.6rem] uppercase tracking-widest text-muted-foreground">
                   Markets
                 </div>
@@ -226,7 +220,7 @@ export const HeroStage = ({
                   <CountUp value={mappedMarkets} />
                 </div>
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="text-[0.6rem] uppercase tracking-widest text-muted-foreground">
                   Cycles
                 </div>
@@ -239,7 +233,7 @@ export const HeroStage = ({
 
           <div
             aria-hidden
-            className="pointer-events-none absolute -inset-6 -z-10 rounded-3xl bg-gradient-to-br from-primary/25 via-transparent to-sky-500/15 blur-2xl animate-pulse-glow"
+            className="pointer-events-none absolute -inset-3 -z-10 rounded-3xl bg-gradient-to-br from-primary/25 via-transparent to-sky-500/15 blur-2xl animate-pulse-glow lg:-inset-6"
           />
         </div>
       </div>

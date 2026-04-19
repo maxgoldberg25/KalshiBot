@@ -85,7 +85,7 @@ export function HomePage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-6xl space-y-5 px-4 py-6">
+      <div className="relative z-10 mx-auto max-w-6xl space-y-5 px-4 py-6">
         {err ? (
           <Alert variant="destructive">
             <AlertDescription>{String((err as Error).message)}</AlertDescription>
@@ -101,8 +101,8 @@ export function HomePage() {
         )}
 
         {/* Health + Status */}
-        <div className="grid gap-3 lg:grid-cols-5">
-          <Card className="lg:col-span-3">
+        <div className="grid min-w-0 gap-3 lg:grid-cols-5">
+          <Card className="min-w-0 lg:col-span-3">
             <CardHeader className="pb-2 pt-4">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 System health
@@ -147,15 +147,18 @@ export function HomePage() {
             </CardContent>
           </Card>
 
-          <Card className={cn("lg:col-span-2", !isAuthed && "opacity-60")}>
-            <CardHeader className="pb-2 pt-4">
-              <CardTitle className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                <span>Scan status</span>
-                {!loading && d?.active_odds_provider && (
-                  <span className="font-mono text-[0.62rem] normal-case text-muted-foreground/70">
+          <Card className={cn("min-w-0 lg:col-span-2", !isAuthed && "opacity-60")}>
+            <CardHeader className="space-y-0 pb-2 pt-4">
+              <CardTitle className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <span className="shrink-0">Scan status</span>
+                {!loading && d?.active_odds_provider ? (
+                  <span
+                    className="min-w-0 max-w-full break-words text-end font-mono text-[0.62rem] font-medium normal-case leading-snug text-muted-foreground/70 sm:max-w-[65%]"
+                    title={d.active_odds_provider}
+                  >
                     {d.active_odds_provider}
                   </span>
-                )}
+                ) : null}
               </CardTitle>
             </CardHeader>
             <CardContent className="pb-4 pt-0">
@@ -219,15 +222,17 @@ export function HomePage() {
 
 function HealthRow({ label, ok, detail }: { label: string; ok: boolean; detail: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 py-2 text-sm">
+    <div className="flex items-start justify-between gap-3 py-2 text-sm">
       <div className="flex min-w-0 items-center gap-2">
         <span
           className={cn("size-1.5 shrink-0 rounded-full", ok ? "bg-emerald-500" : "bg-amber-500")}
           aria-hidden
         />
-        <span className="font-medium">{label}</span>
+        <span className="font-medium leading-snug">{label}</span>
       </div>
-      <span className="shrink-0 text-xs text-muted-foreground">{detail}</span>
+      <span className="max-w-[55%] shrink-0 break-words text-right text-xs leading-snug text-muted-foreground">
+        {detail}
+      </span>
     </div>
   )
 }

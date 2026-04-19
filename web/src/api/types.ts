@@ -47,6 +47,8 @@ export type DashboardState = {
 export type KalshiMarketMeta = {
   ticker?: string
   event_ticker?: string
+  series_ticker?: string
+  category?: string
   title?: string
   subtitle?: string
   yes_sub_title?: string
@@ -76,7 +78,7 @@ export type TapeTradeRow = {
   yes_price?: number
   no_price?: number
   notional_usd?: number
-  tier?: "major" | "large" | "notable" | string
+  tier?: "whale" | "major" | "large" | "notable" | string
   created_time?: string
   share_of_oi_pct?: number | null
   kalshi_url?: string
@@ -89,7 +91,17 @@ export type TapeSummary = {
   total_notional_usd?: number
   total_contracts?: number
   unique_markets?: number
-  tier_counts?: { major?: number; large?: number; notable?: number }
+  tier_counts?: {
+    whale?: number
+    major?: number
+    large?: number
+    notable?: number
+  }
+  excluded_sports?: number
+  excluded_by_ticker?: number
+  excluded_by_category?: number
+  excluded_unknown_market?: number
+  excluded_untradeable_market?: number
 }
 
 export type TopMarketRow = {
@@ -101,10 +113,45 @@ export type TopMarketRow = {
   kalshi_url?: string
 }
 
+/**
+ * One aggregated row per market, deduplicating many prints on the same ticker.
+ * These power the Insider Watch table; raw per-trade rows are still exposed on
+ * `trades` for the flow/histogram charts.
+ */
+export type MarketAggRow = {
+  ticker: string
+  title?: string
+  subtitle?: string
+  event_ticker?: string | null
+  category?: string | null
+  status?: string | null
+  close_time?: string | null
+  kalshi_url?: string
+  market?: KalshiMarketMeta
+  tier?: "whale" | "major" | "large" | "notable" | string
+  signal_score?: number
+  total_notional: number
+  total_contracts: number
+  trades: number
+  yes_notional: number
+  no_notional: number
+  net_notional: number
+  yes_share?: number | null
+  largest_notional: number
+  largest_count: number
+  largest_side?: string
+  largest_price?: number | null
+  largest_time?: string | null
+  first_time?: string | null
+  last_time?: string | null
+  max_share_of_oi_pct?: number | null
+}
+
 export type TradesWatchResponse = {
   ok?: boolean
   error?: string
   trades?: TapeTradeRow[]
+  markets?: MarketAggRow[]
   summary?: TapeSummary
   top_markets?: TopMarketRow[]
   kalshi_configured?: boolean
@@ -112,6 +159,7 @@ export type TradesWatchResponse = {
   fetched_at?: string
   min_notional?: number
   fetch_limit?: number
+  filter_version?: string
 }
 
 export type HealthResponse = {
@@ -123,6 +171,7 @@ export type HealthResponse = {
   active_provider?: string
   database?: { connected?: boolean }
   scanner?: {
+    background_enabled?: boolean
     running?: boolean
     scan_count?: number
     last_scan?: string | null

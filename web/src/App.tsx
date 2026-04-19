@@ -1,11 +1,10 @@
 import { useEffect } from "react"
 import { HashRouter, NavLink, Navigate, Route, Routes } from "react-router-dom"
-import { BarChart3, Home, ShieldAlert, ShieldCheck, TrendingUp } from "lucide-react"
+import { Home, ShieldAlert, ShieldCheck, TrendingUp } from "lucide-react"
 import { AdminPage } from "@/pages/AdminPage"
 import { HomePage } from "@/pages/HomePage"
 import { InsiderWatchPage } from "@/pages/InsiderWatchPage"
 import { LoginPage } from "@/pages/LoginPage"
-import { ScannerPage } from "@/pages/ScannerPage"
 import { RequireAdmin } from "@/components/auth/RequireAdmin"
 import { RequireAuth } from "@/components/auth/RequireAuth"
 import { UserMenu } from "@/components/auth/UserMenu"
@@ -41,12 +40,12 @@ const AppShell = () => {
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/95 backdrop-blur-sm">
         <div className="mx-auto flex h-11 max-w-7xl items-center gap-5 px-4">
-          <div className="flex items-center gap-2">
+          <NavLink to="/" className="flex items-center gap-2" aria-label="KalshiBot home">
             <div className="flex h-6 w-6 items-center justify-center rounded bg-primary/15 ring-1 ring-primary/25">
               <TrendingUp className="h-3.5 w-3.5 text-primary" aria-hidden />
             </div>
             <span className="text-sm font-semibold tracking-tight">KalshiBot</span>
-          </div>
+          </NavLink>
 
           <nav className="flex items-center gap-0.5" aria-label="Main navigation">
             <NavLink to="/" end className={navLinkClass}>
@@ -54,16 +53,10 @@ const AppShell = () => {
               Home
             </NavLink>
             {isAuthed && (
-              <>
-                <NavLink to="/scanner" className={navLinkClass}>
-                  <BarChart3 className="size-3.5" aria-hidden />
-                  Scanner
-                </NavLink>
-                <NavLink to="/insider" className={navLinkClass}>
-                  <ShieldAlert className="size-3.5" aria-hidden />
-                  Insider watch
-                </NavLink>
-              </>
+              <NavLink to="/insider" className={navLinkClass}>
+                <ShieldAlert className="size-3.5" aria-hidden />
+                Insider watch
+              </NavLink>
             )}
             {isAuthed && isAdmin && (
               <NavLink to="/admin" className={navLinkClass}>
@@ -83,14 +76,6 @@ const AppShell = () => {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route
-            path="/scanner"
-            element={
-              <RequireAuth>
-                <ScannerPage />
-              </RequireAuth>
-            }
-          />
           <Route
             path="/insider"
             element={

@@ -38,6 +38,14 @@ class Settings(BaseSettings):
     fuzzy_match_threshold: float = Field(default=0.75)
 
     # ── Scanner ─────────────────────────────────────────────────────────────
+    background_scan_enabled: bool = Field(
+        default=False,
+        description=(
+            "If True, the dashboard runs the periodic Kalshi+Odds sportsbook scan loop "
+            "(uses Odds API / OddsPapi on every poll). If False, only a Kalshi connection "
+            "is kept for Insider Watch / tape; set True to restore full scanner behavior."
+        ),
+    )
     poll_interval_seconds: float = Field(default=60.0, description="Seconds between poll cycles")
     kalshi_slippage_buffer: float = Field(default=0.005, description="Slippage buffer for Kalshi (0.005 = 0.5%)")
     sportsbook_execution_friction: float = Field(default=0.01, description="Execution friction buffer for sportsbook")

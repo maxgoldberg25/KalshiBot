@@ -26,6 +26,7 @@ import {
 } from "lucide-react"
 import type { TapeTradeRow, TopMarketRow } from "@/api/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { kalshiOpenHref } from "@/lib/kalshiLinks"
 import { cn } from "@/lib/utils"
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -43,8 +44,7 @@ const COLOR = {
   axis: "hsl(var(--muted-foreground))",
 } as const
 
-const TIERS = ["major", "large", "notable"] as const
-type Tier = (typeof TIERS)[number]
+type Tier = "major" | "large" | "notable"
 
 const TIER_LABEL: Record<Tier, string> = {
   major: "Major",
@@ -212,7 +212,7 @@ type ParetoRow = {
   trades: number
   cumulativePct: number
   color: string
-  href?: string
+  href: string
 }
 
 const buildPareto = (markets: TopMarketRow[]): ParetoRow[] => {
@@ -229,7 +229,7 @@ const buildPareto = (markets: TopMarketRow[]): ParetoRow[] => {
       trades: m.trades ?? 0,
       cumulativePct: grandTotal > 0 ? +((running / grandTotal) * 100).toFixed(1) : 0,
       color: PARETO_PALETTE[i % PARETO_PALETTE.length],
-      href: m.kalshi_url,
+      href: kalshiOpenHref({ ticker: m.ticker, kalshi_url: m.kalshi_url }),
     }
   })
 }
@@ -907,21 +907,15 @@ export const InsiderCharts = ({ rows, topMarkets, loading }: InsiderChartsProps)
                   key={b.ticker}
                   className="flex items-center gap-2 text-[0.7rem] text-muted-foreground"
                 >
-                  {b.href ? (
-                    <a
-                      href={b.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex w-full items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40 hover:text-foreground"
-                      aria-label={`Open ${b.name} on Kalshi`}
-                    >
-                      {content}
-                    </a>
-                  ) : (
-                    <span className="flex w-full items-center gap-2 px-1 py-0.5">
-                      {content}
-                    </span>
-                  )}
+                  <a
+                    href={b.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex w-full items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40 hover:text-foreground"
+                    aria-label={`Open ${b.name} on Kalshi`}
+                  >
+                    {content}
+                  </a>
                 </li>
               )
             })}

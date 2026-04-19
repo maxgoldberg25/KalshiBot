@@ -1,4 +1,4 @@
-import { ArrowRight, BarChart3, ShieldCheck } from "lucide-react"
+import { ArrowRight, ShieldCheck } from "lucide-react"
 import { NavLink } from "react-router-dom"
 import { Reveal } from "@/components/fx/Reveal"
 import { Button } from "@/components/ui/button"
@@ -47,16 +47,10 @@ export const CtaBand = () => {
               {isAuthed ? (
                 <>
                   <Button asChild size="lg" className="gap-2 shadow-lg shadow-primary/20">
-                    <NavLink to="/scanner">
-                      <BarChart3 className="size-4" aria-hidden />
-                      Open Scanner
-                      <ArrowRight className="size-4" aria-hidden />
-                    </NavLink>
-                  </Button>
-                  <Button asChild size="lg" variant="outline" className="gap-2">
                     <NavLink to="/insider">
                       <ShieldCheck className="size-4" aria-hidden />
-                      Insider watch
+                      Open Insider watch
+                      <ArrowRight className="size-4" aria-hidden />
                     </NavLink>
                   </Button>
                 </>

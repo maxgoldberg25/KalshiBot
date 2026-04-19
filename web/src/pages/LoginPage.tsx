@@ -33,12 +33,12 @@ export const LoginPage = () => {
 
   const redirectTarget = useMemo(() => {
     const raw = searchParams.get("next")
-    if (!raw) return "/scanner"
+    if (!raw) return "/insider"
     try {
       const decoded = decodeURIComponent(raw)
-      return decoded.startsWith("/") ? decoded : "/scanner"
+      return decoded.startsWith("/") ? decoded : "/insider"
     } catch {
-      return "/scanner"
+      return "/insider"
     }
   }, [searchParams])
 
