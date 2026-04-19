@@ -1,4 +1,4 @@
-# KalshiBot deployment
+# MarketEdge deployment
 
 The app is two pieces:
 
@@ -53,8 +53,14 @@ Vercel serves the SPA with the security headers declared in `web/vercel.json`
 
 ## 2. Deploy the backend
 
-The backend uses SQLite on local disk and runs a background scan loop, so
-**pick a host with a persistent filesystem and a single always-on process**.
+The backend runs a background scan loop and needs a **database**. You can use:
+
+- **SQLite on disk** (needs a persistent volume on hosts like Render), or
+- **Postgres on Neon** (recommended with **Render free tier**): set `KALSHI_ODDS_DATABASE_URL`
+  to Neon’s `postgresql://…` URL (include `?sslmode=require`). Tables are created on startup;
+  no disk mount is required on the web host.
+
+For SQLite-only hosting, **pick a host with a persistent filesystem and a single always-on process**.
 
 ### Required environment variables (all prefixed with `KALSHI_ODDS_`)
 
@@ -82,14 +88,14 @@ The server exposes:
 
 ```toml
 # fly.toml
-app = "kalshibot-api"
+app = "marketedge-api"
 primary_region = "iad"
 
 [build]
   dockerfile = "Dockerfile"
 
 [[mounts]]
-  source = "kalshibot_data"
+  source = "marketedge_data"
   destination = "/data"
 
 [http_service]

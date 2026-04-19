@@ -1,10 +1,8 @@
 """
-SQLite persistence layer.
+Persistence layer: SQLite (local / disk) via aiosqlite.
 
-Stores:
-- Kalshi contracts
-- Odds quotes
-- Alerts history
+For hosted Postgres (e.g. Neon), see ``db_postgres.PostgresRepository`` and
+``make_repository(database_url)``.
 """
 
 from __future__ import annotations
@@ -22,7 +20,7 @@ from kalshi_odds.models.comparison import Alert
 from kalshi_odds.core.portfolio import Position, PositionStatus, PnLSummary
 
 
-class Repository:
+class SqliteRepository:
     """Async SQLite repository."""
 
     def __init__(self, db_path: str = "kalshi_odds.db") -> None:
@@ -436,7 +434,7 @@ class Repository:
         password_salt: str,
         password_hash: str,
     ) -> dict:
-        """Insert a user. Raises sqlite3.IntegrityError on duplicate username/email."""
+        """Insert a user. Raises IntegrityError on duplicate username/email (SQLite)."""
         assert self._conn is not None
         now = datetime.now(timezone.utc).isoformat()
         await self._conn.execute(
@@ -790,9 +788,55 @@ class Repository:
         await self._conn.commit()
         return (cur.rowcount or 0) > 0
 
-    async def __aenter__(self) -> Repository:
+    async def __aenter__(self) -> SqliteRepository:
         await self.connect()
         return self
 
     async def __aexit__(self, *exc) -> None:
         await self.close()
+
+
+import kalshi_odds.db_postgres as _db_pg_backend  # noqa: E402
+
+PostgresRepository = _db_pg_backend.PostgresRepository
+AnyRepository = SqliteRepository | PostgresRepository
+
+# Backwards compatibility for code that still imports ``Repository`` as SQLite-only.
+Repository = SqliteRepository
+
+
+def _is_postgres_url(database_url: str) -> bool:
+    u = database_url.strip()
+    return u.startswith("postgresql://") or u.startswith("postgres://")
+
+
+def _sqlite_path_from_url(database_url: str) -> str:
+    """Path component for aiosqlite (supports sqlite+aiosqlite:///...)."""
+    if database_url.startswith("sqlite+aiosqlite:///"):
+        return database_url[len("sqlite+aiosqlite:///") :]
+    if database_url.startswith("sqlite:///"):
+        return database_url[len("sqlite:///") :]
+    return database_url.split("///")[-1]
+
+
+def make_repository(database_url: str) -> AnyRepository:
+    """Open SQLite (default) or Postgres (Neon) from ``KALSHI_ODDS_DATABASE_URL``."""
+    if _is_postgres_url(database_url):
+        return PostgresRepository(database_url)
+    return SqliteRepository(_sqlite_path_from_url(database_url))
+
+
+def is_unique_violation(exc: BaseException) -> bool:
+    """Duplicate key / unique constraint (SQLite or Postgres)."""
+    import sqlite3
+
+    if isinstance(exc, sqlite3.IntegrityError):
+        return True
+    try:
+        import asyncpg
+
+        return isinstance(exc, asyncpg.exceptions.UniqueViolationError)
+    except Exception:
+        return False
+
+

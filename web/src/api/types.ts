@@ -1,4 +1,4 @@
-/** Loose types for KalshiBot dashboard JSON APIs */
+/** Loose types for MarketEdge dashboard JSON APIs */
 
 export type PnlSummary = {
   total_realized_pnl?: number

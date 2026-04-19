@@ -1,13 +1,24 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react"
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import {
+  Check,
   CheckCircle2,
+  ClipboardList,
   KeyRound,
   Loader2,
   Lock,
+  LogIn,
   Mail,
   MessageSquare,
   ShieldCheck,
+  Sparkles,
   Ticket,
   UserRound,
 } from "lucide-react"
@@ -25,7 +36,7 @@ const USERNAME_RE = /^[a-zA-Z0-9_.-]{3,32}$/
 export const LoginPage = () => {
   const { status, login, register } = useAuth()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const inviteToken = useMemo(() => {
     return (searchParams.get("invite") || "").trim().slice(0, 128)
@@ -42,7 +53,11 @@ export const LoginPage = () => {
     }
   }, [searchParams])
 
-  const [mode, setMode] = useState<Mode>(inviteToken ? "redeem" : "login")
+  const [mode, setMode] = useState<Mode>(() => {
+    const inv = (searchParams.get("invite") || "").trim().slice(0, 128)
+    if (inv) return "redeem"
+    return searchParams.get("mode") === "waitlist" ? "waitlist" : "login"
+  })
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -58,13 +73,29 @@ export const LoginPage = () => {
   }, [status, navigate, redirectTarget])
 
   useEffect(() => {
-    if (inviteToken) setMode("redeem")
-  }, [inviteToken])
+    if (inviteToken) {
+      setMode("redeem")
+      return
+    }
+    const m = searchParams.get("mode")
+    setMode(m === "waitlist" ? "waitlist" : "login")
+  }, [inviteToken, searchParams])
 
   const handleSwitchMode = (next: Mode) => {
     setMode(next)
     setError(null)
     setWaitlistSubmitted(false)
+    if (!inviteToken) {
+      setSearchParams(
+        (prev) => {
+          const p = new URLSearchParams(prev)
+          if (next === "waitlist") p.set("mode", "waitlist")
+          else p.delete("mode")
+          return p
+        },
+        { replace: true },
+      )
+    }
   }
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -125,17 +156,17 @@ export const LoginPage = () => {
 
   const headingTitle =
     mode === "login"
-      ? "Sign in to KalshiBot"
+      ? "Sign in to MarketEdge"
       : mode === "redeem"
         ? "Activate your account"
-        : "Request access"
+        : "Join the waitlist"
 
   const headingSubtitle =
     mode === "login"
       ? "Access the live scanner, insider watch, and execution tools."
       : mode === "redeem"
         ? "You've been approved. Choose a password to finish setting up your account."
-        : "KalshiBot is invite-only. Tell us a bit about yourself and we'll reach out when a spot opens."
+        : "Invite-only access. Tell us who you are — we'll email you if a seat opens."
 
   return (
     <div className="relative min-h-[calc(100vh-2.75rem)] overflow-hidden">
@@ -151,34 +182,89 @@ export const LoginPage = () => {
         />
       </div>
 
-      <div className="mx-auto flex max-w-md flex-col items-stretch gap-6 px-4 py-16">
-        <div className="flex flex-col items-center gap-2 text-center">
-          <div className="flex size-11 items-center justify-center rounded-xl bg-primary/15 ring-1 ring-primary/30">
-            <ShieldCheck className="size-5 text-primary" aria-hidden />
+      <div className="mx-auto flex max-w-md flex-col items-stretch gap-8 px-4 py-16 sm:py-20">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div
+            className={cn(
+              "relative flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br shadow-lg ring-1 transition-colors duration-300",
+              mode === "waitlist"
+                ? "from-emerald-500/25 via-primary/15 to-sky-500/20 ring-emerald-500/25"
+                : "from-primary/25 via-primary/10 to-sky-500/15 ring-primary/30",
+            )}
+          >
+            <span
+              className="absolute inset-0 rounded-2xl bg-[radial-gradient(ellipse_at_30%_20%,rgba(255,255,255,0.12),transparent_55%)]"
+              aria-hidden
+            />
+            {mode === "waitlist" ? (
+              <ClipboardList className="relative size-6 text-emerald-300" aria-hidden />
+            ) : mode === "redeem" ? (
+              <Ticket className="relative size-6 text-primary" aria-hidden />
+            ) : (
+              <ShieldCheck className="relative size-6 text-primary" aria-hidden />
+            )}
           </div>
-          <h1 className="text-balance text-2xl font-semibold tracking-tight">
-            {headingTitle}
-          </h1>
-          <p className="max-w-sm text-sm text-muted-foreground">{headingSubtitle}</p>
+          <div className="space-y-2">
+            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+              {mode === "waitlist" ? "Early access" : mode === "redeem" ? "Invite" : "Secure access"}
+            </p>
+            <h1 className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
+              {headingTitle}
+            </h1>
+            <p className="mx-auto max-w-sm text-pretty text-sm leading-relaxed text-muted-foreground">
+              {headingSubtitle}
+            </p>
+          </div>
         </div>
 
-        <Card className="border-border/60 bg-card/80 shadow-xl backdrop-blur">
-          <CardHeader className="pb-2">
+        <Card className="overflow-hidden rounded-2xl border-border/50 bg-card/85 shadow-2xl shadow-primary/5 ring-1 ring-white/[0.04] backdrop-blur-md dark:ring-white/[0.06]">
+          <CardHeader className="space-y-4 pb-2 pt-6">
+            {mode === "waitlist" && !waitlistSubmitted && (
+              <div className="flex flex-col gap-2 rounded-xl border border-border/50 bg-muted/25 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs leading-snug text-muted-foreground">
+                  Already have an account? Sign in with your username and password.
+                </p>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="h-8 shrink-0 cursor-pointer gap-1.5 self-start sm:self-auto"
+                  onClick={() => handleSwitchMode("login")}
+                >
+                  <LogIn className="size-3.5" aria-hidden />
+                  Sign in
+                </Button>
+              </div>
+            )}
             {mode !== "redeem" && (
               <div
-                className="flex items-center gap-1 rounded-md bg-muted p-1"
+                className="grid grid-cols-1 gap-2 rounded-xl bg-gradient-to-b from-muted/90 to-muted/50 p-1.5 ring-1 ring-border/40 sm:grid-cols-2"
                 role="tablist"
-                aria-label="Auth mode"
+                aria-label="Sign in or join the waitlist"
               >
                 <ModeTab
                   active={mode === "login"}
                   label="Sign in"
+                  icon={<LogIn className="size-4 shrink-0" aria-hidden />}
                   onClick={() => handleSwitchMode("login")}
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                      e.preventDefault()
+                      handleSwitchMode("waitlist")
+                    }
+                  }}
                 />
                 <ModeTab
                   active={mode === "waitlist"}
-                  label="Request access"
+                  label="Join the waitlist"
+                  icon={<Sparkles className="size-4 shrink-0" aria-hidden />}
                   onClick={() => handleSwitchMode("waitlist")}
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+                      e.preventDefault()
+                      handleSwitchMode("login")
+                    }
+                  }}
                 />
               </div>
             )}
@@ -191,7 +277,30 @@ export const LoginPage = () => {
             <CardTitle className="sr-only">{headingTitle}</CardTitle>
           </CardHeader>
 
-          <CardContent className="pt-4">
+          <CardContent className="px-5 pb-6 pt-2 sm:px-6">
+            {mode === "waitlist" && !waitlistSubmitted && (
+              <ul className="mb-5 space-y-2.5 rounded-xl border border-primary/15 bg-gradient-to-br from-primary/[0.07] to-transparent px-4 py-3.5 text-left">
+                <li className="flex gap-2.5 text-xs leading-snug text-muted-foreground">
+                  <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/25">
+                    <Check className="size-3" aria-hidden />
+                  </span>
+                  Live scanner, insider tape, and execution tooling once approved.
+                </li>
+                <li className="flex gap-2.5 text-xs leading-snug text-muted-foreground">
+                  <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md bg-sky-500/15 text-sky-300 ring-1 ring-sky-500/25">
+                    <Check className="size-3" aria-hidden />
+                  </span>
+                  We review every request — no spam, no auto-approved bots.
+                </li>
+                <li className="flex gap-2.5 text-xs leading-snug text-muted-foreground">
+                  <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md bg-amber-500/10 text-amber-400/90 ring-1 ring-amber-500/20">
+                    <Check className="size-3" aria-hidden />
+                  </span>
+                  Typical reply time is a few business days if it’s a fit.
+                </li>
+              </ul>
+            )}
+
             {waitlistSubmitted ? (
               <WaitlistSuccess
                 onReset={() => {
@@ -304,7 +413,7 @@ export const LoginPage = () => {
                         ? "Signing in…"
                         : mode === "redeem"
                           ? "Activating…"
-                          : "Submitting…"}
+                          : "Sending request…"}
                     </>
                   ) : (
                     <>
@@ -313,27 +422,26 @@ export const LoginPage = () => {
                         ? "Sign in"
                         : mode === "redeem"
                           ? "Activate account"
-                          : "Request access"}
+                          : "Join the waitlist"}
                     </>
                   )}
                 </Button>
               </form>
             )}
 
-            {!waitlistSubmitted && mode !== "redeem" && (
-              <p className="mt-4 text-center text-xs text-muted-foreground">
-                {mode === "login" ? "No account? " : "Already approved? "}
+            {!waitlistSubmitted && mode === "login" && (
+              <p className="mt-5 text-center text-xs text-muted-foreground">
+                Need an invite?{" "}
                 <button
                   type="button"
                   tabIndex={0}
-                  onClick={() => handleSwitchMode(mode === "login" ? "waitlist" : "login")}
-                  onKeyDown={(e) =>
-                    e.key === "Enter" &&
-                    handleSwitchMode(mode === "login" ? "waitlist" : "login")
-                  }
-                  className="font-medium text-primary underline-offset-4 hover:underline"
+                  onClick={() => handleSwitchMode("waitlist")}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSwitchMode("waitlist")
+                  }}
+                  className="cursor-pointer font-medium text-primary underline-offset-4 transition-colors hover:text-primary/90 hover:underline"
                 >
-                  {mode === "login" ? "Request access" : "Sign in instead"}
+                  Join the waitlist
                 </button>
               </p>
             )}
@@ -352,25 +460,42 @@ export const LoginPage = () => {
 type ModeTabProps = {
   active: boolean
   label: string
+  icon: ReactNode
   onClick: () => void
+  onKeyDown?: (e: KeyboardEvent<HTMLButtonElement>) => void
 }
 
-const ModeTab = ({ active, label, onClick }: ModeTabProps) => (
+const ModeTab = ({ active, label, icon, onClick, onKeyDown }: ModeTabProps) => (
   <button
     type="button"
     role="tab"
     aria-selected={active}
     tabIndex={0}
     onClick={onClick}
-    onKeyDown={(e) => e.key === "Enter" && onClick()}
+    onKeyDown={(e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault()
+        onClick()
+      }
+      onKeyDown?.(e)
+    }}
     className={cn(
-      "flex-1 rounded px-3 py-1.5 text-xs font-medium transition-colors",
+      "flex cursor-pointer items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
       active
-        ? "bg-background text-foreground shadow-sm"
-        : "text-muted-foreground hover:text-foreground",
+        ? "bg-background text-foreground shadow-md ring-1 ring-border/50"
+        : "text-muted-foreground hover:bg-background/50 hover:text-foreground",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     )}
   >
-    {label}
+    <span
+      className={cn(
+        "transition-colors duration-200",
+        active ? "text-primary" : "text-muted-foreground",
+      )}
+    >
+      {icon}
+    </span>
+    <span className="text-balance leading-tight">{label}</span>
   </button>
 )
 

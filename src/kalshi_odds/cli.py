@@ -21,7 +21,7 @@ from kalshi_odds.core.matcher import MarketMatcher
 from kalshi_odds.core.scan_runner import run_scan_cycle, run_multi_sport_scan
 from kalshi_odds.core.scanner import Scanner
 from kalshi_odds.core.sizing import kelly_shares
-from kalshi_odds.db import Repository
+from kalshi_odds.db import AnyRepository, make_repository
 from kalshi_odds.execution import place_opportunity_order
 from kalshi_odds.models.comparison import Alert, Confidence, Opportunity
 
@@ -116,7 +116,7 @@ def sync_kalshi() -> None:
             private_key_path=settings.kalshi_private_key_path,
             base_url=settings.kalshi_base_url,
             requests_per_second=settings.kalshi_requests_per_second,
-        ) as kalshi, Repository(settings.database_url.split("///")[-1]) as repo:
+        ) as kalshi, make_repository(settings.database_url) as repo:
             console.print("[blue]Fetching Kalshi contracts...[/]")
             contracts = await kalshi.list_contracts()
             
@@ -164,7 +164,7 @@ def sync_odds(
             api_key=settings.odds_api_key,
             base_url=settings.odds_api_base_url,
             requests_per_second=settings.odds_api_requests_per_second,
-        ) as odds_api, Repository(settings.database_url.split("///")[-1]) as repo:
+        ) as odds_api, make_repository(settings.database_url) as repo:
             console.print(f"[blue]Fetching odds for {sport}...[/]")
             
             raw_events = await odds_api.get_odds(sport=sport, markets="h2h")
@@ -218,7 +218,7 @@ def match_candidates(
         matcher.load_mappings()
         
         # Load contracts and quotes from DB
-        async with Repository(settings.database_url.split("///")[-1]) as repo:
+        async with make_repository(settings.database_url) as repo:
             # Simplified: just show the concept
             console.print("[blue]Fuzzy matching not fully implemented in DB layer.[/]")
             console.print("[blue]Add contracts/quotes to DB via sync commands first.[/]")
@@ -235,7 +235,7 @@ def _confidence_meets_minimum(conf: Confidence, min_name: str) -> bool:
 async def _maybe_auto_execute(
     opportunities: list[Opportunity],
     settings,
-    repo: Repository,
+    repo: AnyRepository,
 ) -> None:
     if not settings.execution_enabled or not opportunities:
         return
@@ -293,7 +293,7 @@ def scan(
                 api_key_id=settings.kalshi_api_key_id,
                 private_key_path=settings.kalshi_private_key_path,
             ) as kalshi,
-            Repository(settings.database_url.split("///")[-1]) as repo,
+            make_repository(settings.database_url) as repo,
         ):
             await odds_api.connect()
             try:
@@ -369,7 +369,7 @@ def run(
                 api_key_id=settings.kalshi_api_key_id,
                 private_key_path=settings.kalshi_private_key_path,
             ) as kalshi,
-            Repository(settings.database_url.split("///")[-1]) as repo,
+            make_repository(settings.database_url) as repo,
         ):
             await odds_api.connect()
             try:
@@ -495,7 +495,7 @@ def execute(
         return
 
     async def _place() -> dict:
-        async with Repository(settings.database_url.split("///")[-1]) as repo:
+        async with make_repository(settings.database_url) as repo:
             return await place_opportunity_order(
                 opp,
                 shares,
@@ -523,7 +523,7 @@ def show(
     settings = get_settings()
 
     async def _run():
-        async with Repository(settings.database_url.split("///")[-1]) as repo:
+        async with make_repository(settings.database_url) as repo:
             alerts = await repo.get_recent_alerts(limit=last)
             
             if not alerts:

@@ -1,4 +1,13 @@
-import { Activity, BarChart3, ShieldAlert, Sparkles, TrendingUp, Wallet, Zap } from "lucide-react"
+import {
+  Activity,
+  BarChart3,
+  ChevronDown,
+  ShieldAlert,
+  Sparkles,
+  TrendingUp,
+  Wallet,
+  Zap,
+} from "lucide-react"
 import type { ReactNode } from "react"
 import { NavLink } from "react-router-dom"
 import { CountUp } from "./CountUp"
@@ -113,7 +122,7 @@ export const HeroStage = ({
               </span>
             </h1>
             <p className="max-w-xl text-balance text-base leading-relaxed text-muted-foreground">
-              KalshiBot continuously maps Kalshi contracts to live sportsbook lines, detects
+              MarketEdge continuously maps Kalshi contracts to live sportsbook lines, detects
               mispricings with slippage-aware math, and surfaces the edge before it disappears.
             </p>
           </div>
@@ -236,9 +245,17 @@ export const HeroStage = ({
             className="pointer-events-none absolute -inset-3 -z-10 rounded-3xl bg-gradient-to-br from-primary/25 via-transparent to-sky-500/15 blur-2xl animate-pulse-glow lg:-inset-6"
           />
         </div>
+
+        <div className="pointer-events-none col-span-full flex flex-col items-center gap-1 pb-3 pt-8 text-muted-foreground sm:pt-10">
+          <span className="sr-only">More on this page below.</span>
+          <span className="font-mono text-[0.6rem] uppercase tracking-[0.3em]" aria-hidden>
+            scroll
+          </span>
+          <ChevronDown className="size-4 animate-scroll-hint" aria-hidden />
+        </div>
       </div>
 
-      <div className="relative">
+      <div className="relative z-20 border-t border-border/30 bg-background/80">
         <TickerTape />
       </div>
     </section>

@@ -1,4 +1,3 @@
-import { ChevronDown } from "lucide-react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { fetchHealth, fetchState, postScan } from "@/api/fetch"
@@ -18,6 +17,8 @@ import { ScanTimeline } from "@/components/home/ScanTimeline"
 import { useAuth } from "@/context/AuthContext"
 import { fmtTime, fmtUptime } from "@/lib/format"
 import { cn } from "@/lib/utils"
+import { NavLink } from "react-router-dom"
+import { ScanAnalyticsCharts } from "@/components/scan/ScanAnalyticsCharts"
 
 export function HomePage() {
   const qc = useQueryClient()
@@ -77,15 +78,9 @@ export function HomePage() {
           onScan={isAuthed ? () => scanM.mutate() : undefined}
           scanning={scanM.isPending}
         />
-
-        {/* Scroll hint */}
-        <div className="pointer-events-none -mt-2 flex flex-col items-center gap-1 text-muted-foreground">
-          <span className="font-mono text-[0.6rem] uppercase tracking-[0.3em]">scroll</span>
-          <ChevronDown className="size-4 animate-scroll-hint" aria-hidden />
-        </div>
       </div>
 
-      <div className="relative z-10 mx-auto max-w-6xl space-y-5 px-4 py-6">
+      <div className="relative z-10 mx-auto max-w-6xl space-y-5 px-4 py-8">
         {err ? (
           <Alert variant="destructive">
             <AlertDescription>{String((err as Error).message)}</AlertDescription>
@@ -203,6 +198,29 @@ export function HomePage() {
             ))}
           </div>
         )}
+
+        {isAuthed ? (
+          <div className="space-y-3 border-t border-border/40 pt-5">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Scan analytics
+                </p>
+                <p className="mt-1 max-w-xl text-[0.7rem] leading-relaxed text-muted-foreground">
+                  Live charts track opportunities across scans and how edges cluster by size — same
+                  views as the full scanner.
+                </p>
+              </div>
+              <NavLink
+                to="/scanner"
+                className="shrink-0 text-xs font-medium text-primary underline-offset-4 hover:underline"
+              >
+                Open full scanner
+              </NavLink>
+            </div>
+            <ScanAnalyticsCharts state={d} loading={loading} />
+          </div>
+        ) : null}
       </div>
 
       <LeagueMarquee />

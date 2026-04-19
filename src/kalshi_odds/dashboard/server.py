@@ -13,7 +13,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
 
-import sqlite3
 
 from fastapi import Body, Cookie, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -54,7 +53,7 @@ from kalshi_odds.core.matcher import MarketMatcher
 from kalshi_odds.core.scan_runner import run_scan_cycle, run_multi_sport_scan, run_poly_scan
 from kalshi_odds.core.scanner import Scanner
 from kalshi_odds.core.sizing import kelly_shares
-from kalshi_odds.db import Repository
+from kalshi_odds.db import AnyRepository, is_unique_violation, make_repository
 from kalshi_odds.execution import place_opportunity_order
 from kalshi_odds.models.comparison import Opportunity
 
@@ -822,7 +821,7 @@ async def run_one_scan(
     kalshi: KalshiAdapter,
     odds_api,
     polymarket: Optional[PolymarketAdapter],
-    repo: Repository,
+    repo: AnyRepository,
 ) -> tuple[int, Optional[str]]:
     """Run a scan with pre-existing connections. Returns (alert_count, error_message)."""
     _state["is_scanning"] = True
@@ -912,7 +911,7 @@ async def _run_standalone_scan(settings: Settings) -> tuple[int, Optional[str]]:
             requests_per_second=settings.kalshi_requests_per_second,
         ) as kalshi,
         PolymarketAdapter() as polymarket,
-        Repository(settings.database_url.split("///")[-1]) as repo,
+        make_repository(settings.database_url) as repo,
     ):
         await odds_api.connect()
         try:
@@ -924,7 +923,7 @@ async def _run_standalone_scan(settings: Settings) -> tuple[int, Optional[str]]:
 _persistent_kalshi: Optional[KalshiAdapter] = None
 _persistent_odds: Optional[OddsAPIAdapter] = None
 _persistent_poly: Optional[PolymarketAdapter] = None
-_persistent_repo: Optional[Repository] = None
+_persistent_repo: Optional[AnyRepository] = None
 
 
 @asynccontextmanager
@@ -934,7 +933,7 @@ async def _dashboard_lifespan(app: FastAPI):
     s = get_settings()
     task: Optional[asyncio.Task] = None
 
-    repo = Repository(s.database_url.split("///")[-1])
+    repo = make_repository(s.database_url)
     await repo.connect()
     _persistent_repo = repo
     auth_deps.bind(repo)
@@ -1091,8 +1090,7 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
     async def api_state(user: dict = Depends(require_user)) -> dict:
         _ = user
         s = get_settings()
-        db_path = s.database_url.split("///")[-1]
-        async with Repository(db_path) as repo:
+        async with make_repository(s.database_url) as repo:
             positions = await repo.get_open_positions()
             settled = await repo.get_settled_positions(limit=50)
             pnl = await repo.get_pnl_summary()
@@ -1235,8 +1233,7 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
     async def api_alerts_recent(user: dict = Depends(require_user)) -> list[dict]:
         _ = user
         s = get_settings()
-        db_path = s.database_url.split("///")[-1]
-        async with Repository(db_path) as repo:
+        async with make_repository(s.database_url) as repo:
             alerts = await repo.get_recent_alerts(limit=20)
         return [a.model_dump(mode="json") for a in alerts]
 
@@ -1258,8 +1255,7 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
             raise HTTPException(400, f"Invalid index {payload.index}")
         opp = Opportunity.model_validate(raw[payload.index - 1])
         s = get_settings()
-        db_path = s.database_url.split("///")[-1]
-        async with Repository(db_path) as repo:
+        async with make_repository(s.database_url) as repo:
             try:
                 return await place_opportunity_order(
                     opp,
@@ -1418,8 +1414,10 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
             entry = await _persistent_repo.create_waitlist_entry(
                 username=username, email=email, reason=reason, ip_hash=ip_h
             )
-        except sqlite3.IntegrityError:
-            return {"ok": True, "status": "received"}
+        except Exception as e:
+            if is_unique_violation(e):
+                return {"ok": True, "status": "received"}
+            raise
         return {"ok": True, "status": "received", "id": entry["id"]}
 
     # ── Auth endpoints ─────────────────────────────────────────────────
@@ -1466,8 +1464,10 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
         salt, pwd_hash = hash_password(password)
         try:
             user = await _persistent_repo.create_user(username, email, salt, pwd_hash)
-        except sqlite3.IntegrityError:
-            raise HTTPException(409, "Username or email already in use") from None
+        except Exception as e:
+            if is_unique_violation(e):
+                raise HTTPException(409, "Username or email already in use") from None
+            raise
         await _maybe_bootstrap_admin(username)
         full_user = await _persistent_repo.get_user_by_id(user["id"]) or user
         session_token = new_session_token()

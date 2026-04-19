@@ -1,15 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts"
+import { useMemo, useState } from "react"
 import { ChevronDown, ChevronUp, ChevronsUpDown, ExternalLink, Loader2, RefreshCw, Zap } from "lucide-react"
 import { toast } from "sonner"
 import { fetchState, postScan } from "@/api/fetch"
@@ -31,10 +21,7 @@ import {
 import { fmtMoney, fmtTime } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { NavLink } from "react-router-dom"
-
-const SCAN_HIST_MAX = 72
-
-type ScanPoint = { label: string; opps: number }
+import { ScanAnalyticsCharts } from "@/components/scan/ScanAnalyticsCharts"
 
 function aggregateOpps(opps: OpportunityRow[]) {
   const n = opps.length
@@ -55,21 +42,6 @@ function aggregateOpps(opps: OpportunityRow[]) {
   return { meanEdge: sum / n, maxEdge: maxE, meanBps: sumB / n, est }
 }
 
-const TOOLTIP_STYLE = {
-  background: "hsl(var(--card))",
-  border: "1px solid hsl(var(--border))",
-  borderRadius: "6px",
-  fontSize: "11px",
-  color: "hsl(var(--foreground))",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
-}
-
-const AXIS_PROPS = {
-  tick: { fontSize: 9, fill: "hsl(var(--muted-foreground))" },
-  tickLine: false,
-  axisLine: false,
-} as const
-
 export function ScannerPage() {
   const qc = useQueryClient()
   const stateQ = useQuery({
@@ -77,25 +49,11 @@ export function ScannerPage() {
     queryFn: fetchState,
     refetchInterval: 15_000,
   })
-  const [scanHist, setScanHist] = useState<ScanPoint[]>([])
-  const prevScan = useRef(-1)
   const [sortCol, setSortCol] = useState<"edge" | "game" | "conf">("edge")
   const [sortAsc, setSortAsc] = useState(false)
 
   const d = stateQ.data
   const loading = stateQ.isPending
-
-  useEffect(() => {
-    if (!d) return
-    const sc = d.scan_count ?? 0
-    if (sc <= 0 || sc === prevScan.current) return
-    prevScan.current = sc
-    const pt: ScanPoint = {
-      label: fmtTime(d.last_scan_iso ?? undefined),
-      opps: d.opportunities?.length ?? 0,
-    }
-    setScanHist((h) => [...h, pt].slice(-SCAN_HIST_MAX))
-  }, [d])
 
   const scanM = useMutation({
     mutationFn: postScan,
@@ -129,26 +87,6 @@ export function ScannerPage() {
     })
     return unique
   }, [d?.opportunities, sortCol, sortAsc])
-
-  const edgeBuckets = useMemo(() => {
-    const opps = d?.opportunities ?? []
-    const b = [0, 0, 0, 0, 0]
-    for (const o of opps) {
-      const e = Number(o.edge_cents) || 0
-      if (e < 1) b[0]++
-      else if (e < 2) b[1]++
-      else if (e < 3) b[2]++
-      else if (e < 5) b[3]++
-      else b[4]++
-    }
-    return [
-      { name: "0–1¢", v: b[0] },
-      { name: "1–2¢", v: b[1] },
-      { name: "2–3¢", v: b[2] },
-      { name: "3–5¢", v: b[3] },
-      { name: "5¢+",  v: b[4] },
-    ]
-  }, [d?.opportunities])
 
   const agg = aggregateOpps(d?.opportunities ?? [])
   const hasErr = d?.last_error && !String(d.last_error).includes("Waiting")
@@ -244,61 +182,7 @@ export function ScannerPage() {
       </Card>
 
       {/* ── Charts ──────────────────────────────────────── */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <ChartCard title="Opportunities per scan">
-          {scanHist.length < 2 ? (
-            <EmptyChart />
-          ) : (
-            <ResponsiveContainer width="100%" height={150}>
-              <AreaChart data={scanHist} margin={{ left: -12, right: 4, top: 6, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="oppsGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="label" {...AXIS_PROPS} />
-                <YAxis {...AXIS_PROPS} allowDecimals={false} width={26} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ stroke: "hsl(var(--border))" }} />
-                <Area
-                  type="monotone"
-                  dataKey="opps"
-                  name="Opportunities"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={1.5}
-                  fill="url(#oppsGrad)"
-                  dot={false}
-                  activeDot={{ r: 3, fill: "hsl(var(--primary))" }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          )}
-        </ChartCard>
-
-        <ChartCard title="Edge spread (¢)">
-          {!d?.opportunities?.length ? (
-            <EmptyChart />
-          ) : (
-            <ResponsiveContainer width="100%" height={150}>
-              <BarChart data={edgeBuckets} margin={{ left: -12, right: 4, top: 6, bottom: 0 }}>
-                <XAxis dataKey="name" {...AXIS_PROPS} />
-                <YAxis {...AXIS_PROPS} allowDecimals={false} width={26} />
-                <Tooltip
-                  contentStyle={TOOLTIP_STYLE}
-                  cursor={{ fill: "hsl(var(--accent))", opacity: 0.6 }}
-                />
-                <Bar
-                  dataKey="v"
-                  name="Count"
-                  fill="hsl(var(--primary))"
-                  fillOpacity={0.8}
-                  radius={[3, 3, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </ChartCard>
-      </div>
+      <ScanAnalyticsCharts state={d} loading={loading} />
 
       {/* ── Opportunities table ─────────────────────────── */}
       <Card>
@@ -507,27 +391,6 @@ function MetaRow({ label, value, mono }: { label: string; value: string; mono?: 
       <span className={cn("font-medium tabular-nums", mono && "font-mono text-[0.78rem]")}>
         {value}
       </span>
-    </div>
-  )
-}
-
-function ChartCard({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <Card>
-      <CardHeader className="pb-1 pt-4">
-        <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pb-3 pt-1">{children}</CardContent>
-    </Card>
-  )
-}
-
-function EmptyChart() {
-  return (
-    <div className="flex h-[150px] items-center justify-center text-xs text-muted-foreground/60">
-      No data yet
     </div>
   )
 }

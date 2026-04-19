@@ -1,6 +1,6 @@
 # ✅ Complete System Rebuild Summary
 
-The Kalshi bot has been **completely rebuilt** as a production-grade **alert-only Kalshi vs Sportsbook odds comparison system**.
+MarketEdge has been **completely rebuilt** as a production-grade **alert-only Kalshi vs Sportsbook odds comparison system**.
 
 ---
 
@@ -33,7 +33,7 @@ A senior-quant-engineered system that:
 ## 🗂️ File Structure
 
 ```
-KalshiBot/
+MarketEdge/
 ├── src/kalshi_odds/           # Main package
 │   ├── models/                # Data models (4 files)
 │   ├── adapters/              # Kalshi + The Odds API (2 files)

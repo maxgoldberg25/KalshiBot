@@ -7,7 +7,7 @@ Get up and running with the Kalshi vs Sportsbook odds scanner in 5 minutes.
 ## Step 1: Install
 
 ```bash
-cd /Users/maxgoldberg/Documents/GitHub/KalshiBot/KalshiBot
+cd /path/to/MarketEdge
 source venv/bin/activate
 pip install -e ".[dev]"
 ```

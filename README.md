@@ -1,4 +1,4 @@
-# KalshiBot — Kalshi vs Sportsbook Odds Scanner
+# MarketEdge — Kalshi vs Sportsbook Odds Scanner
 
 Automated edge detection between Kalshi prediction markets and traditional sportsbooks. Finds price discrepancies, ranks them by edge, and surfaces them in a real-time web dashboard. Ships with an **invite-only waitlist**, an **admin console**, a **live public-tape "Insider Watch"** feed, and a ready-to-deploy **Vercel frontend + standalone FastAPI backend** architecture. Optional Kalshi-side execution with manual sportsbook hedging.
 
@@ -82,6 +82,38 @@ Deployment docs live at [`DEPLOY.md`](./DEPLOY.md).
 
 ---
 
+## Frontend and backend wiring
+
+The product is split into a **static React app** (`web/`, Vite + TypeScript) and a **long-lived FastAPI server** (`kalshi_odds.dashboard.server`). They talk over **HTTPS JSON**; the browser never opens a database or Kalshi directly.
+
+### How requests are built
+
+- All dashboard API calls go through [`web/src/api/fetch.ts`](./web/src/api/fetch.ts).
+- The backend origin is `import.meta.env.VITE_API_BASE_URL` at **build time** (Vite), normalized with no trailing slash. If it is **empty**, requests use a **relative** path (same origin as the page — e.g. the Python server serving `web/dist/`, or Vite dev with a proxy).
+- Every `fetch` uses **`credentials: "include"`** so the backend’s **HTTP-only session cookie** is sent on `/api/*` (login, logout, state, scanner, admin, waitlist, etc.).
+
+So: **`VITE_API_BASE_URL` + path** (e.g. `https://api.example.com` + `/api/state` → `https://api.example.com/api/state`), always with cookies when the browser allows it.
+
+### Same origin vs split deploy
+
+| Setup | Frontend | `VITE_API_BASE_URL` | Cookies |
+|--------|-----------|---------------------|---------|
+| **Combined** (default `kalshi-odds dashboard`) | Served from FastAPI as `web/dist/` | Leave **unset** (empty) | Same site → simple `SameSite` defaults work |
+| **Local dev** | Vite on e.g. `:5173` | Leave **unset**; Vite **proxies** `/api` → backend `:8080` | Same effective origin for `/api` via proxy |
+| **Split** (e.g. Vercel + Render) | Static host on one origin | Set to the **full API origin** (no trailing slash) | Cross-site → backend must allow the SPA origin in **`KALSHI_ODDS_CORS_ORIGINS`** (exact matches) and use **`KALSHI_ODDS_SESSION_COOKIE_SECURE=true`** with **`KALSHI_ODDS_SESSION_COOKIE_SAMESITE=none`** so the session cookie is sent on credentialed cross-origin requests. |
+
+Hash-based routing (`HashRouter`) keeps paths like `/#/`, `/#/login`, `/#/scanner` on the frontend; **API paths stay** `/api/...` on whatever origin serves the backend (or proxied to it).
+
+### Backend side (what must match)
+
+- **CORS**: `KALSHI_ODDS_CORS_ORIGINS` must list every frontend origin that will call the API (production and preview URLs if you use them).
+- **Cookies**: For HTTPS production, enable secure cookies; for SPA and API on **different** hostnames, use SameSite **`none`** (requires **Secure**). See [`DEPLOY.md`](./DEPLOY.md) for the full env table.
+- **Health**: `GET /api/health` is a simple check that the server is up; authenticated features use `/api/state`, `/api/auth/me`, etc.
+
+For step-by-step production deploy (Vercel, Fly, Render, env vars), use **`DEPLOY.md`** — this section is the mental model for how the two halves connect.
+
+---
+
 ## Odds Provider Tiers
 
 The system cascades automatically across three tiers — no manual intervention required:
@@ -135,7 +167,7 @@ In your Kalshi account settings, generate an RSA key pair. Download the private 
 
 ## Accounts, waitlist & admin
 
-KalshiBot ships as a **closed platform**: no one can create an account without an admin-issued invite.
+MarketEdge ships as a **closed platform**: no one can create an account without an admin-issued invite.
 
 ### Flow
 

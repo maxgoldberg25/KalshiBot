@@ -5,7 +5,7 @@ from __future__ import annotations
 from kalshi_odds.adapters.kalshi import KalshiAdapter
 from kalshi_odds.config import Settings
 from kalshi_odds.core.portfolio import Position, PositionStatus
-from kalshi_odds.db import Repository
+from kalshi_odds.db import AnyRepository
 from kalshi_odds.models.comparison import Direction, Opportunity
 
 
@@ -15,7 +15,7 @@ async def place_opportunity_order(
     *,
     dry_run: bool,
     settings: Settings,
-    repo: Repository | None = None,
+    repo: AnyRepository | None = None,
     save_position: bool = True,
 ) -> dict:
     """

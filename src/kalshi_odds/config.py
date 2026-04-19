@@ -58,7 +58,13 @@ class Settings(BaseSettings):
     poly_match_threshold: float = Field(default=82.0, description="RapidFuzz threshold for PM matching (0-100)")
 
     # ── Persistence ─────────────────────────────────────────────────────────
-    database_url: str = Field(default="sqlite+aiosqlite:///kalshi_odds.db")
+    database_url: str = Field(
+        default="sqlite+aiosqlite:///kalshi_odds.db",
+        description=(
+            "SQLite file URL (local/default) or Postgres URL for Neon, e.g. "
+            "postgresql://user:pass@host/db?sslmode=require"
+        ),
+    )
 
     # ── Output ──────────────────────────────────────────────────────────────
     output_jsonl: str = Field(default="alerts.jsonl")

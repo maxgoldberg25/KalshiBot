@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { LogIn, LogOut, Loader2, UserRound } from "lucide-react"
+import { LogIn, LogOut, Loader2, Sparkles, UserRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/context/AuthContext"
 
@@ -32,17 +32,26 @@ export const UserMenu = () => {
 
   if (status === "anon") {
     return (
-      <Button
-        asChild
-        size="sm"
-        variant="default"
-        className="h-7 gap-1.5 px-2.5 text-xs"
+      <div
+        className="flex h-7 max-w-[200px] items-stretch overflow-hidden rounded-md border border-border/60 bg-background text-xs shadow-sm ring-1 ring-border/30 sm:max-w-none"
+        role="group"
+        aria-label="Sign in or join the waitlist"
       >
-        <Link to="/login" aria-label="Sign in">
-          <LogIn className="size-3.5" aria-hidden />
-          Sign in
+        <Link
+          to="/login?mode=waitlist"
+          className="flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-1 border-r border-border/60 px-2 font-medium text-muted-foreground transition-colors duration-200 hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
+        >
+          <Sparkles className="size-3 shrink-0 opacity-80" aria-hidden />
+          <span className="truncate sm:max-w-[7.5rem]">Join waitlist</span>
         </Link>
-      </Button>
+        <Link
+          to="/login?mode=login"
+          className="flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-1 bg-primary px-2.5 font-medium text-primary-foreground transition-colors duration-200 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-foreground/30"
+        >
+          <LogIn className="size-3.5 shrink-0" aria-hidden />
+          <span className="shrink-0">Sign in</span>
+        </Link>
+      </div>
     )
   }
 

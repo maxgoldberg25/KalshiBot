@@ -2,7 +2,7 @@
 Lightweight auth: PBKDF2-SHA256 password hashing + opaque session tokens.
 
 No extra dependencies — uses only the Python stdlib (`hashlib`, `hmac`, `secrets`).
-Sessions live in the existing SQLite database and are sent to the browser via
+Sessions live in the configured database (SQLite or Postgres) and are sent to the browser via
 an HTTP-only cookie.
 """
 
@@ -20,7 +20,7 @@ from typing import Deque, Optional
 
 from fastapi import Cookie, Depends, HTTPException, Request, Response, status
 
-from kalshi_odds.db import Repository
+from kalshi_odds.db import AnyRepository
 
 SESSION_COOKIE_NAME = "kb_session"
 SESSION_TTL_DAYS = 14
@@ -192,19 +192,19 @@ def rate_limit_or_raise(limiter: _RateLimiter, *, key: str) -> None:
 
 
 class AuthDeps:
-    """Holds a reference to the persistent Repository so request deps can access it."""
+    """Holds a reference to the persistent DB repository so request deps can access it."""
 
     def __init__(self) -> None:
-        self._repo: Optional[Repository] = None
+        self._repo: Optional[AnyRepository] = None
 
-    def bind(self, repo: Repository) -> None:
+    def bind(self, repo: AnyRepository) -> None:
         self._repo = repo
 
     def unbind(self) -> None:
         self._repo = None
 
     @property
-    def repo(self) -> Repository:
+    def repo(self) -> AnyRepository:
         if self._repo is None:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
