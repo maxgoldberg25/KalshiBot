@@ -26,8 +26,8 @@ from kalshi_odds.execution import place_opportunity_order
 from kalshi_odds.models.comparison import Alert, Confidence, Opportunity
 
 app = typer.Typer(
-    name="kalshi-odds",
-    help="Alert-only Kalshi vs Sportsbook odds comparison scanner.",
+    name="kalshiinsider",
+    help="KalshiInsider — Kalshi vs sportsbook odds scanner.",
     no_args_is_help=True,
 )
 console = Console()
@@ -83,7 +83,7 @@ def _render_opportunities_table(opportunities: list[Opportunity], title: str = "
         )
     console.print(table)
     console.print(
-        "[dim]Detail: kalshi-odds detail <#>     |     Execute: kalshi-odds execute <#> --shares 100[/]"
+        "[dim]Detail: kalshiinsider detail <#>     |     Execute: kalshiinsider execute <#> --shares 100[/]"
     )
 
 
@@ -431,7 +431,7 @@ def detail(
     """Show full breakdown for an opportunity from the last scan."""
     opportunities = _load_last_opportunities()
     if not opportunities:
-        console.print("[yellow]No opportunities saved. Run [bold]kalshi-odds scan[/] first.[/]")
+        console.print("[yellow]No opportunities saved. Run [bold]kalshiinsider scan[/] first.[/]")
         raise typer.Exit(1)
     if index < 1 or index > len(opportunities):
         console.print(f"[red]Invalid index {index}. Use 1–{len(opportunities)}.[/]")
@@ -465,7 +465,7 @@ def execute(
         raise typer.Exit(1)
     opportunities = _load_last_opportunities()
     if not opportunities:
-        console.print("[yellow]No opportunities saved. Run [bold]kalshi-odds scan[/] first.[/]")
+        console.print("[yellow]No opportunities saved. Run [bold]kalshiinsider scan[/] first.[/]")
         raise typer.Exit(1)
     if index < 1 or index > len(opportunities):
         console.print(f"[red]Invalid index {index}. Use 1–{len(opportunities)}.[/]")

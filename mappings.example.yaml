@@ -6,11 +6,11 @@
 # How to find IDs:
 #
 #   Kalshi:
-#     - Use `kalshi-odds sync-kalshi` to list contracts
+#     - Use `kalshiinsider sync-kalshi` to list contracts
 #     - Contract ID is the ticker (e.g., "SUPERBOWL-KC-YES")
 #
 #   The Odds API:
-#     - Use `kalshi-odds sync-odds --sport americanfootball_nfl` to list events
+#     - Use `kalshiinsider sync-odds --sport americanfootball_nfl` to list events
 #     - event_id is returned by the API
 #     - selection is the team/player name
 #

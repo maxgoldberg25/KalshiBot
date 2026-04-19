@@ -86,7 +86,7 @@ class Settings(BaseSettings):
     )
     bankroll_dollars: float = Field(default=500.0, description="Bankroll for Kelly sizing")
     kelly_fraction: float = Field(default=0.25, description="Fraction of full Kelly (e.g. 0.25 = quarter-Kelly)")
-    dashboard_port: int = Field(default=8080, description="Port for kalshi-odds dashboard")
+    dashboard_port: int = Field(default=8080, description="Port for KalshiInsider dashboard")
     auto_execute_min_confidence: str = Field(
         default="high",
         description="Minimum confidence for auto-execute in run loop: low, med, high",

@@ -2,7 +2,7 @@
 # Register the first account via POST /api/auth/register (session cookie → cookies.txt).
 #
 # Prerequisites:
-#   1. Dashboard running: kalshi-odds dashboard  (default http://127.0.0.1:8080)
+#   1. Dashboard running: kalshiinsider dashboard  (default http://127.0.0.1:8080)
 #   2. In .env: KALSHI_ODDS_PUBLIC_REGISTRATION_ENABLED=true
 #   3. KALSHI_ODDS_ADMIN_BOOTSTRAP_USERNAMES must include the same username you register.
 #
@@ -63,8 +63,8 @@ if [[ "$curl_ec" -ne 0 ]]; then
   echo "Could not reach the dashboard at ${BASE} (curl exit ${curl_ec})." >&2
   echo "" >&2
   echo "In another terminal, start the server from the repo root:" >&2
-  echo "  ./venv/bin/kalshi-odds dashboard" >&2
-  echo "  # or: kalshi-odds dashboard" >&2
+  echo "  ./venv/bin/kalshiinsider dashboard" >&2
+  echo "  # or: kalshiinsider dashboard" >&2
   echo "" >&2
   echo "If you changed the port in .env, this script reads KALSHI_ODDS_DASHBOARD_PORT from .env," >&2
   echo "or set explicitly:  export KALSHI_DASHBOARD_URL=http://127.0.0.1:YOUR_PORT" >&2
@@ -92,7 +92,7 @@ if [[ "$code" == "404" ]]; then
   echo "" >&2
   echo "404: /api/auth/register not found. Use this repo's package, e.g. from repo root:" >&2
   echo "  pip install -e ." >&2
-  echo "then restart: kalshi-odds dashboard" >&2
+  echo "then restart: kalshiinsider dashboard" >&2
   exit 1
 fi
 
@@ -101,7 +101,7 @@ if [[ "$code" == "422" ]]; then
   echo "422: JSON payload was rejected by the server." >&2
   echo "If the auto-retry above did not succeed, reinstall/restart from repo root:" >&2
   echo "  ./venv/bin/python -m pip install -e ." >&2
-  echo "  ./venv/bin/kalshi-odds dashboard" >&2
+  echo "  ./venv/bin/kalshiinsider dashboard" >&2
   exit 1
 fi
 

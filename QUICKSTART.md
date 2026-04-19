@@ -7,7 +7,7 @@ Get up and running with the Kalshi vs Sportsbook odds scanner in 5 minutes.
 ## Step 1: Install
 
 ```bash
-cd /path/to/MarketEdge
+cd /path/to/KalshiInsider
 source venv/bin/activate
 pip install -e ".[dev]"
 ```
@@ -60,10 +60,10 @@ KALSHI_ODDS_ODDS_API_KEY=your-odds-api-key
 
 ```bash
 # Fetch Kalshi contracts (takes ~30 seconds)
-kalshi-odds sync-kalshi
+kalshiinsider sync-kalshi
 
 # Fetch NFL odds (uses 1 API request)
-kalshi-odds sync-odds --sport americanfootball_nfl
+kalshiinsider sync-odds --sport americanfootball_nfl
 ```
 
 You should see tables showing contracts and odds.
@@ -102,7 +102,7 @@ markets:
 ## Step 6: Run Scanner (Alert-Only)
 
 ```bash
-kalshi-odds run --sport americanfootball_nfl
+kalshiinsider run --sport americanfootball_nfl
 ```
 
 The scanner will:
@@ -128,10 +128,10 @@ Book no-vig: 0.500
 
 ```bash
 # Show last 20 alerts
-kalshi-odds show
+kalshiinsider show
 
 # Show last 50
-kalshi-odds show --last 50
+kalshiinsider show --last 50
 ```
 
 Alerts are also saved to:
@@ -144,14 +144,14 @@ Alerts are also saved to:
 
 ```bash
 # Morning: sync data
-kalshi-odds sync-kalshi
-kalshi-odds sync-odds --sport americanfootball_nfl
+kalshiinsider sync-kalshi
+kalshiinsider sync-odds --sport americanfootball_nfl
 
 # Start scanner
-kalshi-odds run --sport americanfootball_nfl
+kalshiinsider run --sport americanfootball_nfl
 
 # In another terminal: watch alerts in real-time
-watch -n 10 "kalshi-odds show --last 10"
+watch -n 10 "kalshiinsider show --last 10"
 
 # Manual execution (when alert triggers):
 # 1. Check Kalshi website - verify price still valid

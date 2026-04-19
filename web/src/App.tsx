@@ -40,11 +40,11 @@ const AppShell = () => {
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/95 backdrop-blur-sm">
         <div className="mx-auto flex h-11 max-w-7xl items-center gap-5 px-4">
-          <NavLink to="/" className="flex items-center gap-2" aria-label="MarketEdge home">
+          <NavLink to="/" className="flex items-center gap-2" aria-label="KalshiInsider home">
             <div className="flex h-6 w-6 items-center justify-center rounded bg-primary/15 ring-1 ring-primary/25">
               <TrendingUp className="h-3.5 w-3.5 text-primary" aria-hidden />
             </div>
-            <span className="text-sm font-semibold tracking-tight">MarketEdge</span>
+            <span className="text-sm font-semibold tracking-tight">KalshiInsider</span>
           </NavLink>
 
           <nav className="flex items-center gap-0.5" aria-label="Main navigation">

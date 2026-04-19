@@ -123,17 +123,17 @@ Plus JSONL log for time-series analysis.
 
 ```bash
 # Data sync
-kalshi-odds sync-kalshi               # Fetch Kalshi contracts
-kalshi-odds sync-odds --sport nfl     # Fetch sportsbook odds
+kalshiinsider sync-kalshi               # Fetch Kalshi contracts
+kalshiinsider sync-odds --sport nfl     # Fetch sportsbook odds
 
 # Matching
-kalshi-odds match-candidates --fuzzy  # Show fuzzy match suggestions
+kalshiinsider match-candidates --fuzzy  # Show fuzzy match suggestions
 
 # Scanner
-kalshi-odds run --sport nfl           # Start alert loop (default 60s interval)
+kalshiinsider run --sport nfl           # Start alert loop (default 60s interval)
 
 # Review
-kalshi-odds show --last 50            # Show recent alerts
+kalshiinsider show --last 50            # Show recent alerts
 ```
 
 ---

@@ -29,7 +29,7 @@ KALSHI_ODDS_ODDS_API_KEY=your-api-key-here
 ### Step 3: Test It
 
 ```bash
-kalshi-odds sync-odds --sport americanfootball_nfl
+kalshiinsider sync-odds --sport americanfootball_nfl
 ```
 
 You should see a table of odds from multiple sportsbooks.
@@ -196,14 +196,14 @@ Free tier (500 req/month) strategies:
 **Option A: Manual sync**
 ```bash
 # Sync once per day
-kalshi-odds sync-odds --sport americanfootball_nfl  # 1 request
+kalshiinsider sync-odds --sport americanfootball_nfl  # 1 request
 # Use cached data all day
 ```
 
 **Option B: Targeted scanning**
 ```bash
 # Only scan during game days
-kalshi-odds run --sport americanfootball_nfl --interval 300  # 5 min polls
+kalshiinsider run --sport americanfootball_nfl --interval 300  # 5 min polls
 ```
 
 **Option C: Event-based**
@@ -217,9 +217,9 @@ kalshi-odds run --sport americanfootball_nfl --interval 300  # 5 min polls
 After getting your API key:
 
 1. Add to `.env`: `KALSHI_ODDS_ODDS_API_KEY=...`
-2. Test: `kalshi-odds sync-odds --sport americanfootball_nfl`
+2. Test: `kalshiinsider sync-odds --sport americanfootball_nfl`
 3. See data: Check the output table
 4. Create mappings: Add Kalshi contracts to `mappings.yaml`
-5. Run scanner: `kalshi-odds run`
+5. Run scanner: `kalshiinsider run`
 
 See `QUICKSTART.md` for complete walkthrough.

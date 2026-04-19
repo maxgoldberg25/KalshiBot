@@ -1,7 +1,7 @@
 [project]
-name = "kalshi-odds-scanner"
+name = "kalshiinsider"
 version = "0.1.0"
-description = "Alert-only Kalshi vs Sportsbook odds comparison scanner"
+description = "KalshiInsider — Kalshi vs sportsbook odds scanner and dashboard"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -33,7 +33,7 @@ dev = [
 ]
 
 [project.scripts]
-kalshi-odds = "kalshi_odds.cli:app"
+kalshiinsider = "kalshi_odds.cli:app"
 
 [build-system]
 requires = ["hatchling"]

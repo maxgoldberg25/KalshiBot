@@ -122,7 +122,7 @@ export const HeroStage = ({
               </span>
             </h1>
             <p className="max-w-xl text-balance text-base leading-relaxed text-muted-foreground">
-              MarketEdge continuously maps Kalshi contracts to live sportsbook lines, detects
+              KalshiInsider continuously maps Kalshi contracts to live sportsbook lines, detects
               mispricings with slippage-aware math, and surfaces the edge before it disappears.
             </p>
           </div>

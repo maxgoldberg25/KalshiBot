@@ -1,6 +1,6 @@
 # ✅ Complete System Rebuild Summary
 
-MarketEdge has been **completely rebuilt** as a production-grade **alert-only Kalshi vs Sportsbook odds comparison system**.
+KalshiInsider has been **completely rebuilt** as a production-grade **alert-only Kalshi vs Sportsbook odds comparison system**.
 
 ---
 
@@ -33,7 +33,7 @@ A senior-quant-engineered system that:
 ## 🗂️ File Structure
 
 ```
-MarketEdge/
+KalshiInsider/
 ├── src/kalshi_odds/           # Main package
 │   ├── models/                # Data models (4 files)
 │   ├── adapters/              # Kalshi + The Odds API (2 files)
@@ -94,8 +94,8 @@ KALSHI_ODDS_ODDS_API_KEY=your-key-here
 ### 3. Sync Data
 
 ```bash
-kalshi-odds sync-kalshi                    # Fetch Kalshi contracts
-kalshi-odds sync-odds --sport americanfootball_nfl  # Fetch NFL odds
+kalshiinsider sync-kalshi                    # Fetch Kalshi contracts
+kalshiinsider sync-odds --sport americanfootball_nfl  # Fetch NFL odds
 ```
 
 ### 4. Create Mappings
@@ -117,7 +117,7 @@ markets:
 ### 5. Run Scanner
 
 ```bash
-kalshi-odds run --sport americanfootball_nfl
+kalshiinsider run --sport americanfootball_nfl
 ```
 
 Alerts will appear when edges are detected!
@@ -164,19 +164,19 @@ edge = kalshi_yes_bid - slippage - sportsbook_p_no_vig × (1 - friction)
 
 ```bash
 # Data sync
-kalshi-odds sync-kalshi               # Fetch Kalshi contracts (~30s)
-kalshi-odds sync-odds --sport nfl     # Fetch odds (uses 1 API request)
+kalshiinsider sync-kalshi               # Fetch Kalshi contracts (~30s)
+kalshiinsider sync-odds --sport nfl     # Fetch odds (uses 1 API request)
 
 # Matching
-kalshi-odds match-candidates --fuzzy  # Show fuzzy match candidates
+kalshiinsider match-candidates --fuzzy  # Show fuzzy match candidates
 
 # Scanner
-kalshi-odds run --sport nfl           # Start alert loop (60s interval default)
-kalshi-odds run --interval 300        # Poll every 5 minutes
+kalshiinsider run --sport nfl           # Start alert loop (60s interval default)
+kalshiinsider run --interval 300        # Poll every 5 minutes
 
 # Review
-kalshi-odds show                      # Last 20 alerts
-kalshi-odds show --last 100           # Last 100 alerts
+kalshiinsider show                      # Last 20 alerts
+kalshiinsider show --last 100           # Last 100 alerts
 ```
 
 ---
@@ -320,10 +320,10 @@ The system is **fully functional** and **production-ready**.
 **Next steps:**
 1. Get The Odds API key (2 minutes)
 2. Add it to `.env`
-3. Run `kalshi-odds sync-kalshi`
-4. Run `kalshi-odds sync-odds --sport americanfootball_nfl`
+3. Run `kalshiinsider sync-kalshi`
+4. Run `kalshiinsider sync-odds --sport americanfootball_nfl`
 5. Create mappings in `mappings.yaml`
-6. Run `kalshi-odds run`
+6. Run `kalshiinsider run`
 
 See `QUICKSTART.md` for detailed walkthrough.
 

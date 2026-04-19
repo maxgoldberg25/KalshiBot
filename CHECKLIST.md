@@ -22,14 +22,14 @@ Use this checklist to get the scanner running. Check off each step as you comple
 
 - [ ] **Test configuration**
   ```bash
-  kalshi-odds sync-kalshi
+  kalshiinsider sync-kalshi
   ```
   - Should show Kalshi contracts table
   - If error: check Kalshi credentials in `.env`
 
 - [ ] **Test odds fetching**
   ```bash
-  kalshi-odds sync-odds --sport americanfootball_nfl
+  kalshiinsider sync-odds --sport americanfootball_nfl
   ```
   - Should show odds table from multiple sportsbooks
   - If error: check `KALSHI_ODDS_ODDS_API_KEY` in `.env`
@@ -43,12 +43,12 @@ Use this checklist to get the scanner running. Check off each step as you comple
   - Example: Super Bowl, playoff games, major events
 
 - [ ] **Find Kalshi contract IDs**
-  - Run: `kalshi-odds sync-kalshi`
+  - Run: `kalshiinsider sync-kalshi`
   - Look for relevant markets in the output
   - Note the `contract_id` (ticker)
 
 - [ ] **Find sportsbook event IDs**
-  - Run: `kalshi-odds sync-odds --sport americanfootball_nfl`
+  - Run: `kalshiinsider sync-odds --sport americanfootball_nfl`
   - Look for matching events
   - Note the event details
 
@@ -69,7 +69,7 @@ Use this checklist to get the scanner running. Check off each step as you comple
     ```
 
 - [ ] **Validate mappings**
-  - Run: `kalshi-odds run --sport americanfootball_nfl`
+  - Run: `kalshiinsider run --sport americanfootball_nfl`
   - Should start scanning without errors
   - Ctrl+C to stop
 
@@ -79,13 +79,13 @@ Use this checklist to get the scanner running. Check off each step as you comple
 
 - [ ] **Morning sync** (updates market data)
   ```bash
-  kalshi-odds sync-kalshi
-  kalshi-odds sync-odds --sport americanfootball_nfl
+  kalshiinsider sync-kalshi
+  kalshiinsider sync-odds --sport americanfootball_nfl
   ```
 
 - [ ] **Start scanner**
   ```bash
-  kalshi-odds run --sport americanfootball_nfl
+  kalshiinsider run --sport americanfootball_nfl
   ```
   - Leave running in terminal
   - Alerts appear when edges detected
@@ -93,7 +93,7 @@ Use this checklist to get the scanner running. Check off each step as you comple
 - [ ] **Monitor alerts**
   - In another terminal:
     ```bash
-    watch -n 30 "kalshi-odds show --last 10"
+    watch -n 30 "kalshiinsider show --last 10"
     ```
   - Or check `alerts.jsonl` file
 
@@ -109,8 +109,8 @@ Use this checklist to get the scanner running. Check off each step as you comple
 
 - [ ] **Add more sports**
   ```bash
-  kalshi-odds sync-odds --sport basketball_nba
-  kalshi-odds sync-odds --sport baseball_mlb
+  kalshiinsider sync-odds --sport basketball_nba
+  kalshiinsider sync-odds --sport baseball_mlb
   ```
 
 - [ ] **Tune thresholds**
@@ -178,7 +178,7 @@ Want to test without API keys?
 pytest -v
 
 # Test CLI help
-kalshi-odds --help
+kalshiinsider --help
 
 # Test math interactively
 python -c "from kalshi_odds.core.odds_math import *; print(american_to_prob(-110))"

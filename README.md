@@ -1,4 +1,4 @@
-# MarketEdge — Kalshi vs Sportsbook Odds Scanner
+# KalshiInsider — Kalshi vs Sportsbook Odds Scanner
 
 Automated edge detection between Kalshi prediction markets and traditional sportsbooks. Finds price discrepancies, ranks them by edge, and surfaces them in a real-time web dashboard. Ships with an **invite-only waitlist**, an **admin console**, a **live public-tape "Insider Watch"** feed, and a ready-to-deploy **Vercel frontend + standalone FastAPI backend** architecture. Optional Kalshi-side execution with manual sportsbook hedging.
 
@@ -24,7 +24,7 @@ cp .env.example .env
 cd web && npm install && npm run build && cd ..
 
 # 5. Launch the dashboard
-kalshi-odds dashboard
+kalshiinsider dashboard
 # Open http://127.0.0.1:8080
 ```
 
@@ -98,7 +98,7 @@ So: **`VITE_API_BASE_URL` + path** (e.g. `https://api.example.com` + `/api/state
 
 | Setup | Frontend | `VITE_API_BASE_URL` | Cookies |
 |--------|-----------|---------------------|---------|
-| **Combined** (default `kalshi-odds dashboard`) | Served from FastAPI as `web/dist/` | Leave **unset** (empty) | Same site → simple `SameSite` defaults work |
+| **Combined** (default `kalshiinsider dashboard`) | Served from FastAPI as `web/dist/` | Leave **unset** (empty) | Same site → simple `SameSite` defaults work |
 | **Local dev** | Vite on e.g. `:5173` | Leave **unset**; Vite **proxies** `/api` → backend `:8080` | Same effective origin for `/api` via proxy |
 | **Split** (e.g. Vercel + Render) | Static host on one origin | Set to the **full API origin** (no trailing slash) | Cross-site → backend must allow the SPA origin in **`KALSHI_ODDS_CORS_ORIGINS`** (exact matches) and use **`KALSHI_ODDS_SESSION_COOKIE_SECURE=true`** with **`KALSHI_ODDS_SESSION_COOKIE_SAMESITE=none`** so the session cookie is sent on credentialed cross-origin requests. |
 
@@ -167,7 +167,7 @@ In your Kalshi account settings, generate an RSA key pair. Download the private 
 
 ## Accounts, waitlist & admin
 
-MarketEdge ships as a **closed platform**: no one can create an account without an admin-issued invite.
+KalshiInsider ships as a **closed platform**: no one can create an account without an admin-issued invite.
 
 ### Flow
 
@@ -199,7 +199,7 @@ The first admin has to be created carefully because nothing grants admin by defa
 3. `yourname` is auto-promoted to admin on register (and re-checked on every login for safety).
 4. Flip `KALSHI_ODDS_PUBLIC_REGISTRATION_ENABLED` back to `false` and redeploy.
 
-If `HTTP 404` appears on `/api/auth/register`, the process serving port 8080 is not this repo’s dashboard (or an old install). Reinstall from the repo root with `pip install -e .` and restart `kalshi-odds dashboard`. If you see `HTTP 403`, registration is still invite-only — confirm `KALSHI_ODDS_PUBLIC_REGISTRATION_ENABLED=true` in `.env` and restart the server.
+If `HTTP 404` appears on `/api/auth/register`, the process serving port 8080 is not this repo’s dashboard (or an old install). Reinstall from the repo root with `pip install -e .` and restart `kalshiinsider dashboard`. If you see `HTTP 403`, registration is still invite-only — confirm `KALSHI_ODDS_PUBLIC_REGISTRATION_ENABLED=true` in `.env` and restart the server.
 
 From that point on, every new account goes through the waitlist.
 
@@ -307,7 +307,7 @@ A Fly.io/Dockerfile template and a full walkthrough (including a worked first-ad
 ### Dashboard (recommended)
 
 ```bash
-kalshi-odds dashboard
+kalshiinsider dashboard
 ```
 
 Opens `http://127.0.0.1:8080`. The dashboard:
@@ -320,32 +320,32 @@ Opens `http://127.0.0.1:8080`. The dashboard:
 
 ```bash
 # One-shot scan — display ranked opportunities and exit
-kalshi-odds scan --sport basketball_nba
+kalshiinsider scan --sport basketball_nba
 
 # Continuous scanner loop (alerts only, no dashboard)
-kalshi-odds run --sport basketball_nba,baseball_mlb
+kalshiinsider run --sport basketball_nba,baseball_mlb
 
 # Show recent alerts from the database
-kalshi-odds show --last 50
+kalshiinsider show --last 50
 
 # Manual execution of Kalshi leg
-kalshi-odds execute --index 1 --shares 100 --dry-run
+kalshiinsider execute --index 1 --shares 100 --dry-run
 
 # Detailed breakdown for one opportunity
-kalshi-odds detail --index 1
+kalshiinsider detail --index 1
 
 # Re-build mappings.yaml from Kalshi + Odds API
-kalshi-odds sync-kalshi
-kalshi-odds sync-odds --sport basketball_nba
+kalshiinsider sync-kalshi
+kalshiinsider sync-odds --sport basketball_nba
 
 # Show fuzzy-match candidates for manual review
-kalshi-odds match-candidates --fuzzy
+kalshiinsider match-candidates --fuzzy
 ```
 
 Multiple sports: pass a comma-separated list to `--sport`:
 
 ```bash
-kalshi-odds scan --sport basketball_nba,baseball_mlb
+kalshiinsider scan --sport basketball_nba,baseball_mlb
 ```
 
 Or set a default in `.env`:

@@ -1,4 +1,4 @@
-# MarketEdge deployment
+# KalshiInsider deployment
 
 The app is two pieces:
 
@@ -88,14 +88,14 @@ The server exposes:
 
 ```toml
 # fly.toml
-app = "marketedge-api"
+app = "kalshiinsider-api"
 primary_region = "iad"
 
 [build]
   dockerfile = "Dockerfile"
 
 [[mounts]]
-  source = "marketedge_data"
+  source = "kalshiinsider_data"
   destination = "/data"
 
 [http_service]

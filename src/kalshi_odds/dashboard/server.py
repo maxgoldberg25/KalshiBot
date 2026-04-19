@@ -1049,7 +1049,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
     _ = settings_override
     s = get_settings()
-    app = FastAPI(title="Kalshi Odds Dashboard", lifespan=_dashboard_lifespan)
+    app = FastAPI(title="KalshiInsider", lifespan=_dashboard_lifespan)
 
     # Security headers (first, so they apply to all responses, including CORS preflights).
     app.add_middleware(SecurityHeadersMiddleware, secure_cookie=s.session_cookie_secure)

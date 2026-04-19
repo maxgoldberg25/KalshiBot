@@ -6,8 +6,8 @@ This guide helps you find Kalshi contracts that match sportsbook markets.
 
 ```bash
 # 1. Sync both data sources
-kalshi-odds sync-kalshi
-kalshi-odds sync-odds --sport basketball_nba
+kalshiinsider sync-kalshi
+kalshiinsider sync-odds --sport basketball_nba
 
 # 2. Open the database
 sqlite3 kalshi_odds.db
@@ -115,7 +115,7 @@ WHERE title LIKE '%Thunder%'
 ### Step 2: Check if sportsbooks have it
 First, sync championship futures:
 ```bash
-kalshi-odds sync-odds --sport basketball_nba_championship_winner
+kalshiinsider sync-odds --sport basketball_nba_championship_winner
 ```
 
 Then query:
@@ -176,10 +176,10 @@ Once you find a match and add it to `mappings.yaml`:
 
 ```bash
 # Run the scanner
-kalshi-odds run --sport basketball_nba
+kalshiinsider run --sport basketball_nba
 
 # Or for continuous monitoring
-kalshi-odds run --sport basketball_nba --interval 30
+kalshiinsider run --sport basketball_nba --interval 30
 ```
 
 ## Still Can't Find Matches?

@@ -156,7 +156,7 @@ export const LoginPage = () => {
 
   const headingTitle =
     mode === "login"
-      ? "Sign in to MarketEdge"
+      ? "Sign in to KalshiInsider"
       : mode === "redeem"
         ? "Activate your account"
         : "Join the waitlist"
