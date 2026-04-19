@@ -1021,7 +1021,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "geolocation=(), microphone=(), camera=(), payment=()",
         )
         response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
-        response.headers.setdefault("Cross-Origin-Resource-Policy", "same-site")
+        # Allow credentialed fetches from another site (e.g. Vercel SPA → Render API).
+        # "same-site" would block reading JSON from *.vercel.app when the API is on *.onrender.com.
+        response.headers.setdefault("Cross-Origin-Resource-Policy", "cross-origin")
         if self._secure:
             response.headers.setdefault(
                 "Strict-Transport-Security",
