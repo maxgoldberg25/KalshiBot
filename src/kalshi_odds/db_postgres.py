@@ -466,7 +466,7 @@ class PostgresRepository:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
                 "SELECT id, username, email, password_salt, password_hash, created_at, "
-                "last_login_at, is_admin, is_active FROM users WHERE username = $1",
+                "last_login_at, is_admin, is_active FROM users WHERE LOWER(username) = LOWER($1)",
                 username,
             )
         if not row:

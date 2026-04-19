@@ -454,7 +454,7 @@ class SqliteRepository:
         assert self._conn is not None
         cur = await self._conn.execute(
             "SELECT id, username, email, password_salt, password_hash, created_at, "
-            "last_login_at, is_admin, is_active FROM users WHERE username = ?",
+            "last_login_at, is_admin, is_active FROM users WHERE LOWER(username) = LOWER(?)",
             (username,),
         )
         row = await cur.fetchone()
