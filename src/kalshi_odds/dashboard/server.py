@@ -5,6 +5,7 @@ Uses persistent API connections across scan cycles and auto-maps on startup.
 
 import asyncio
 import json
+import logging
 import math
 import re
 import time
@@ -920,12 +921,35 @@ _persistent_odds: Optional[OddsAPIAdapter] = None
 _persistent_poly: Optional[PolymarketAdapter] = None
 _persistent_repo: Optional[AnyRepository] = None
 
+_LOG = logging.getLogger("kalshi_odds.dashboard")
+
+
+def _warn_cors_session_mismatch(s: Settings) -> None:
+    """Cross-origin SPAs need SameSite=None + Secure or the session cookie is never sent on API fetches."""
+    has_cors = bool(s.cors_origin_list or s.cors_origin_regex_stripped)
+    if not has_cors:
+        return
+    if s.session_samesite_normalized != "none":
+        _LOG.warning(
+            "CORS is enabled but session cookies use SameSite=%s. Browsers will not send "
+            "kb_session on cross-origin requests (e.g. Vercel frontend → Render API). "
+            "Set KALSHI_ODDS_SESSION_COOKIE_SAMESITE=none and KALSHI_ODDS_SESSION_COOKIE_SECURE=true, "
+            "redeploy, then log out and log in again.",
+            s.session_samesite_normalized,
+        )
+    elif not s.session_cookie_secure:
+        _LOG.warning(
+            "SameSite=None requires Secure cookies; set KALSHI_ODDS_SESSION_COOKIE_SECURE=true "
+            "or the server will fall back to SameSite=lax and cross-site sessions will break."
+        )
+
 
 @asynccontextmanager
 async def _dashboard_lifespan(app: FastAPI):
     global _persistent_kalshi, _persistent_odds, _persistent_poly, _persistent_repo
 
     s = get_settings()
+    _warn_cors_session_mismatch(s)
     task: Optional[asyncio.Task] = None
 
     repo = make_repository(s.database_url)
