@@ -13,15 +13,41 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
-from fastapi import FastAPI, HTTPException
+import sqlite3
+
+from fastapi import Cookie, Depends, FastAPI, HTTPException, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from kalshi_odds.adapters.kalshi import KalshiAdapter
+from kalshi_odds.adapters.kalshi_web_url import resolve_kalshi_market_web_urls
 from kalshi_odds.adapters.odds_api import OddsAPIAdapter
 from kalshi_odds.adapters.odds_provider import create_odds_provider, FallbackOddsProvider
 from kalshi_odds.adapters.polymarket import PolymarketAdapter
+from kalshi_odds.auth import (
+    LOGIN_LIMITER,
+    REGISTER_LIMITER,
+    WAITLIST_LIMITER,
+    auth_deps,
+    clear_session_cookie,
+    client_ip,
+    get_optional_user,
+    hash_ip,
+    hash_password,
+    new_session_token,
+    rate_limit_or_raise,
+    require_admin,
+    require_user,
+    session_expiry,
+    set_session_cookie,
+    validate_email,
+    validate_password,
+    validate_username,
+    verify_password,
+)
 from kalshi_odds.config import Settings, get_settings
 from kalshi_odds.core.automapper import auto_map as run_auto_map
 from kalshi_odds.core.matcher import MarketMatcher
@@ -91,6 +117,182 @@ def _save_opportunities_disk(opportunities: list[Opportunity]) -> None:
     with open(LAST_OPPORTUNITIES_FILE, "w") as f:
         json.dump(data, f, indent=0, default=str)
     _state["opportunities"] = data
+
+
+_MARKET_META_CACHE: dict[str, tuple[float, dict]] = {}
+_MARKET_META_TTL_SECONDS = 120.0
+
+
+def _score_tape_rows(raw_trades: list[dict], min_notional: float) -> list[dict]:
+    """Score public tape rows by approximate taker notional (contracts × price)."""
+    rows: list[dict] = []
+    for t in raw_trades:
+        try:
+            count = float(str(t.get("count_fp", "0")))
+            yp = float(str(t.get("yes_price_dollars", "0")))
+            np = float(str(t.get("no_price_dollars", "0")))
+            side = t.get("taker_side") or "yes"
+            price = yp if side == "yes" else np
+            notional = count * price
+            if notional < min_notional:
+                continue
+            if notional >= 10_000:
+                tier = "major"
+            elif notional >= 2_500:
+                tier = "large"
+            else:
+                tier = "notable"
+            rows.append(
+                {
+                    "trade_id": t.get("trade_id"),
+                    "ticker": t.get("ticker"),
+                    "taker_side": side,
+                    "taker_price": round(price, 4),
+                    "count": count,
+                    "yes_price": yp,
+                    "no_price": np,
+                    "notional_usd": round(notional, 2),
+                    "tier": tier,
+                    "created_time": t.get("created_time"),
+                }
+            )
+        except Exception:
+            continue
+    rows.sort(key=lambda r: r["notional_usd"], reverse=True)
+    return rows
+
+
+def _f(v: Any) -> Optional[float]:
+    if v is None:
+        return None
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _flatten_market(raw: dict) -> dict:
+    """Pick the fields we actually surface in the UI from the /markets/{ticker} payload."""
+    last = _f(raw.get("last_price_dollars"))
+    prev = _f(raw.get("previous_price_dollars"))
+    change = None
+    if last is not None and prev is not None and prev != 0:
+        change = round((last - prev), 4)
+    return {
+        "ticker": raw.get("ticker"),
+        "event_ticker": raw.get("event_ticker"),
+        "title": raw.get("title") or raw.get("yes_sub_title") or raw.get("ticker"),
+        "subtitle": raw.get("subtitle") or "",
+        "yes_sub_title": raw.get("yes_sub_title") or "",
+        "no_sub_title": raw.get("no_sub_title") or "",
+        "status": raw.get("status"),
+        "close_time": raw.get("close_time"),
+        "expected_expiration_time": raw.get("expected_expiration_time"),
+        "yes_bid": _f(raw.get("yes_bid_dollars")),
+        "yes_ask": _f(raw.get("yes_ask_dollars")),
+        "no_bid": _f(raw.get("no_bid_dollars")),
+        "no_ask": _f(raw.get("no_ask_dollars")),
+        "last_price": last,
+        "previous_price": prev,
+        "price_change_24h": change,
+        "volume_total": _f(raw.get("volume_fp") or raw.get("volume")),
+        "volume_24h": _f(raw.get("volume_24h_fp") or raw.get("volume_24h")),
+        "open_interest": _f(raw.get("open_interest_fp") or raw.get("open_interest")),
+        "notional_value": _f(raw.get("notional_value_dollars")),
+    }
+
+
+async def _hydrate_market_meta(
+    kalshi: KalshiAdapter, tickers: list[str], max_fetch: int
+) -> dict[str, dict]:
+    """Return {ticker: flat_market_meta} for the given tickers, using an in-process TTL cache."""
+    now = time.monotonic()
+    out: dict[str, dict] = {}
+    to_fetch: list[str] = []
+    for tkr in tickers:
+        hit = _MARKET_META_CACHE.get(tkr)
+        if hit and (now - hit[0]) < _MARKET_META_TTL_SECONDS:
+            out[tkr] = hit[1]
+        else:
+            to_fetch.append(tkr)
+    for tkr in to_fetch[:max_fetch]:
+        raw = await kalshi.get_market(tkr)
+        if not raw:
+            continue
+        flat = _flatten_market(raw)
+        _MARKET_META_CACHE[tkr] = (now, flat)
+        out[tkr] = flat
+    return out
+
+
+async def _pull_tape_page(kalshi: KalshiAdapter, limit: int) -> list[dict]:
+    data = await kalshi.list_market_trades(limit=limit)
+    return list(data.get("trades") or [])
+
+
+async def _build_tape_payload(
+    kalshi: KalshiAdapter,
+    raw_trades: list[dict],
+    min_notional: float,
+    max_rows: int = 150,
+    meta_fetch_cap: int = 60,
+) -> dict:
+    scored = _score_tape_rows(raw_trades, min_notional)
+    top = scored[:max_rows]
+    unique_tickers = list(dict.fromkeys(r["ticker"] for r in top if r.get("ticker")))
+    meta = await _hydrate_market_meta(kalshi, unique_tickers, max_fetch=meta_fetch_cap)
+    urls = await resolve_kalshi_market_web_urls(set(unique_tickers))
+
+    total_notional = 0.0
+    total_contracts = 0.0
+    tier_counts = {"major": 0, "large": 0, "notable": 0}
+    unique_markets: dict[str, dict[str, float]] = {}
+    for r in top:
+        tkr = r.get("ticker")
+        m = meta.get(tkr or "") or {}
+        oi = m.get("open_interest")
+        share = None
+        if oi and oi > 0:
+            share = round(100.0 * float(r["count"]) / float(oi), 2)
+        r["market"] = m
+        r["kalshi_url"] = urls.get(tkr or "", "")
+        r["share_of_oi_pct"] = share
+        total_notional += float(r["notional_usd"] or 0.0)
+        total_contracts += float(r["count"] or 0.0)
+        tier_counts[r["tier"]] = tier_counts.get(r["tier"], 0) + 1
+        if tkr:
+            agg = unique_markets.setdefault(
+                tkr, {"notional": 0.0, "count": 0.0, "trades": 0.0}
+            )
+            agg["notional"] += float(r["notional_usd"] or 0.0)
+            agg["count"] += float(r["count"] or 0.0)
+            agg["trades"] += 1.0
+
+    top_markets = [
+        {
+            "ticker": t,
+            "title": (meta.get(t) or {}).get("title") or t,
+            "notional": round(v["notional"], 2),
+            "contracts": v["count"],
+            "trades": int(v["trades"]),
+            "kalshi_url": urls.get(t, ""),
+        }
+        for t, v in unique_markets.items()
+    ]
+    top_markets.sort(key=lambda x: x["notional"], reverse=True)
+
+    return {
+        "trades": top,
+        "summary": {
+            "trades_shown": len(top),
+            "scored_count": len(scored),
+            "total_notional_usd": round(total_notional, 2),
+            "total_contracts": total_contracts,
+            "unique_markets": len(unique_markets),
+            "tier_counts": tier_counts,
+        },
+        "top_markets": top_markets[:8],
+    }
 
 
 def _enrich_opps_with_kelly(opps: list[dict], settings: Settings) -> list[dict]:
@@ -254,6 +456,20 @@ async def _dashboard_lifespan(app: FastAPI):
     s = get_settings()
     task: Optional[asyncio.Task] = None
 
+    repo = Repository(s.database_url.split("///")[-1])
+    await repo.connect()
+    _persistent_repo = repo
+    auth_deps.bind(repo)
+    try:
+        await repo.purge_expired_sessions()
+    except Exception:
+        pass
+    for admin_username in s.admin_bootstrap_list:
+        try:
+            await repo.promote_admin_by_username(admin_username)
+        except Exception:
+            pass
+
     if s.kalshi_configured and s.odds_api_configured:
         kalshi = KalshiAdapter(
             api_key_id=s.kalshi_api_key_id,
@@ -263,15 +479,12 @@ async def _dashboard_lifespan(app: FastAPI):
         )
         odds_api = create_odds_provider(s)
         polymarket = PolymarketAdapter()
-        repo = Repository(s.database_url.split("///")[-1])
         await kalshi.connect()
         await odds_api.connect()
         await polymarket.connect()
-        await repo.connect()
         _persistent_kalshi = kalshi
         _persistent_odds = odds_api
         _persistent_poly = polymarket
-        _persistent_repo = repo
 
         async def loop() -> None:
             scan_num = 0
@@ -314,14 +527,73 @@ async def _dashboard_lifespan(app: FastAPI):
         if _persistent_poly:
             await _persistent_poly.close()
             _persistent_poly = None
+        auth_deps.unbind()
         if _persistent_repo:
             await _persistent_repo.close()
             _persistent_repo = None
 
 
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Attach conservative security headers to every response."""
+
+    def __init__(self, app, *, secure_cookie: bool) -> None:
+        super().__init__(app)
+        self._secure = secure_cookie
+
+    async def dispatch(self, request: Request, call_next):  # type: ignore[override]
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault(
+            "Permissions-Policy",
+            "geolocation=(), microphone=(), camera=(), payment=()",
+        )
+        response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+        response.headers.setdefault("Cross-Origin-Resource-Policy", "same-site")
+        if self._secure:
+            response.headers.setdefault(
+                "Strict-Transport-Security",
+                "max-age=63072000; includeSubDomains; preload",
+            )
+        # CSP: allow self + inline styles for Tailwind-injected styles; block everything else.
+        # Adjust if you add third-party scripts.
+        response.headers.setdefault(
+            "Content-Security-Policy",
+            (
+                "default-src 'self'; "
+                "img-src 'self' data: blob:; "
+                "style-src 'self' 'unsafe-inline'; "
+                "script-src 'self'; "
+                "connect-src 'self' https:; "
+                "font-src 'self' data:; "
+                "frame-ancestors 'none'; "
+                "base-uri 'self'; "
+                "form-action 'self'"
+            ),
+        )
+        return response
+
+
 def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
     _ = settings_override
+    s = get_settings()
     app = FastAPI(title="Kalshi Odds Dashboard", lifespan=_dashboard_lifespan)
+
+    # Security headers (first, so they apply to all responses, including CORS preflights).
+    app.add_middleware(SecurityHeadersMiddleware, secure_cookie=s.session_cookie_secure)
+
+    # CORS — only enabled when explicit origins are configured.
+    origins = s.cors_origin_list
+    if origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=origins,
+            allow_credentials=True,
+            allow_methods=["GET", "POST", "OPTIONS"],
+            allow_headers=["Content-Type"],
+            max_age=600,
+        )
 
     if _REACT_ASSETS.is_dir():
         app.mount("/assets", StaticFiles(directory=_REACT_ASSETS), name="react_assets")
@@ -334,7 +606,8 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
         return HTMLResponse(html)
 
     @app.get("/api/state")
-    async def api_state() -> dict:
+    async def api_state(user: dict = Depends(require_user)) -> dict:
+        _ = user
         s = get_settings()
         db_path = s.database_url.split("///")[-1]
         async with Repository(db_path) as repo:
@@ -366,7 +639,8 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
         }
 
     @app.post("/api/scan")
-    async def api_scan() -> dict:
+    async def api_scan(user: dict = Depends(require_user)) -> dict:
+        _ = user
         s = get_settings()
         async with _scan_lock:
             if _persistent_kalshi and _persistent_odds and _persistent_repo:
@@ -378,7 +652,8 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
         return {"ok": True, "alerts": n}
 
     @app.post("/api/auto-map")
-    async def api_auto_map() -> dict:
+    async def api_auto_map(user: dict = Depends(require_user)) -> dict:
+        _ = user
         s = get_settings()
         if not s.kalshi_configured or not s.odds_api_configured:
             return {"ok": False, "mapped": 0, "error": "APIs not configured"}
@@ -470,7 +745,8 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
         }
 
     @app.get("/api/alerts/recent")
-    async def api_alerts_recent() -> list[dict]:
+    async def api_alerts_recent(user: dict = Depends(require_user)) -> list[dict]:
+        _ = user
         s = get_settings()
         db_path = s.database_url.split("///")[-1]
         async with Repository(db_path) as repo:
@@ -483,7 +759,8 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
         dry_run: bool = True
 
     @app.post("/api/execute")
-    async def api_execute(body: ExecuteBody) -> dict:
+    async def api_execute(body: ExecuteBody, user: dict = Depends(require_admin)) -> dict:
+        _ = user
         raw = _state.get("opportunities") or _load_opportunities_from_disk()
         if not raw:
             raise HTTPException(400, "No opportunities. Run scan first.")
@@ -494,7 +771,7 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
         db_path = s.database_url.split("///")[-1]
         async with Repository(db_path) as repo:
             try:
-                result = await place_opportunity_order(
+                return await place_opportunity_order(
                     opp,
                     body.shares,
                     dry_run=body.dry_run,
@@ -504,7 +781,331 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
                 )
             except Exception as e:
                 raise HTTPException(500, str(e)) from e
-        return result
+
+    @app.get("/api/trades/watch")
+    async def api_trades_watch(
+        min_notional: float = 250.0,
+        fetch_limit: int = 500,
+        user: dict = Depends(require_user),
+    ) -> dict:
+        _ = user
+        """
+        Recent public Kalshi tape filtered to larger prints (surveillance-style feed).
+        Counterparties are not exposed in public data; this ranks by size only.
+        """
+        s = get_settings()
+        now_iso = datetime.now(timezone.utc).isoformat()
+        if not s.kalshi_configured:
+            return {
+                "ok": False,
+                "error": "Kalshi API keys not configured",
+                "trades": [],
+                "kalshi_configured": False,
+                "fetched_at": now_iso,
+                "min_notional": min_notional,
+            }
+        fetch_limit = max(50, min(int(fetch_limit), 1000))
+        floor = max(0.0, float(min_notional))
+        try:
+            if _persistent_kalshi is not None:
+                raw = await _pull_tape_page(_persistent_kalshi, fetch_limit)
+                payload = await _build_tape_payload(_persistent_kalshi, raw, floor)
+            else:
+                async with KalshiAdapter(
+                    api_key_id=s.kalshi_api_key_id,
+                    private_key_path=s.kalshi_private_key_path,
+                    base_url=s.kalshi_base_url,
+                    requests_per_second=s.kalshi_requests_per_second,
+                ) as k:
+                    raw = await _pull_tape_page(k, fetch_limit)
+                    payload = await _build_tape_payload(k, raw, floor)
+            return {
+                "ok": True,
+                "kalshi_configured": True,
+                "raw_count": len(raw),
+                "fetched_at": now_iso,
+                "min_notional": floor,
+                "fetch_limit": fetch_limit,
+                **payload,
+            }
+        except Exception as e:
+            return {
+                "ok": False,
+                "error": _friendly_error(e),
+                "trades": [],
+                "kalshi_configured": True,
+                "fetched_at": now_iso,
+                "min_notional": floor,
+            }
+
+    # ── Auth ────────────────────────────────────────────────────────────
+    class AuthCredentials(BaseModel):
+        username: str = Field(..., min_length=3, max_length=32)
+        password: str = Field(..., min_length=8, max_length=256)
+        email: Optional[str] = None
+        invite_token: Optional[str] = Field(default=None, max_length=128)
+
+    class LoginCredentials(BaseModel):
+        username: str = Field(..., min_length=1, max_length=64)
+        password: str = Field(..., min_length=1, max_length=256)
+
+    class WaitlistApplication(BaseModel):
+        username: str = Field(..., min_length=3, max_length=32)
+        email: Optional[str] = Field(default=None, max_length=254)
+        reason: Optional[str] = Field(default=None, max_length=1000)
+
+    class SetBoolBody(BaseModel):
+        value: bool
+
+    def _user_public(user: dict) -> dict:
+        return {
+            "id": user["id"],
+            "username": user["username"],
+            "email": user.get("email"),
+            "created_at": user.get("created_at"),
+            "last_login_at": user.get("last_login_at"),
+            "is_admin": bool(user.get("is_admin")),
+            "is_active": bool(user.get("is_active", True)),
+        }
+
+    def _write_session_cookie(resp: Response, token: str) -> None:
+        cfg = get_settings()
+        set_session_cookie(
+            resp,
+            token,
+            secure=cfg.session_cookie_secure,
+            samesite=cfg.session_samesite_normalized,
+        )
+
+    def _clear_session_cookie(resp: Response) -> None:
+        cfg = get_settings()
+        clear_session_cookie(
+            resp,
+            secure=cfg.session_cookie_secure,
+            samesite=cfg.session_samesite_normalized,
+        )
+
+    async def _maybe_bootstrap_admin(username: str) -> None:
+        """Promote the user to admin if their name is in ADMIN_BOOTSTRAP_USERNAMES."""
+        if _persistent_repo is None:
+            return
+        bootstrap = [u.lower() for u in get_settings().admin_bootstrap_list]
+        if username.lower() not in bootstrap:
+            return
+        try:
+            await _persistent_repo.promote_admin_by_username(username)
+        except Exception:
+            pass
+
+    # ── Waitlist (public) ──────────────────────────────────────────────
+    @app.post("/api/waitlist")
+    async def api_waitlist_apply(
+        body: WaitlistApplication, request: Request
+    ) -> dict:
+        if _persistent_repo is None:
+            raise HTTPException(503, "Database not ready")
+        ip = client_ip(request)
+        rate_limit_or_raise(WAITLIST_LIMITER, key=f"waitlist:{ip}")
+        username = validate_username(body.username)
+        email = validate_email(body.email)
+        reason = (body.reason or "").strip()[:1000] or None
+        # Prevent duplicate application for an existing active account
+        existing_user = await _persistent_repo.get_user_by_username(username)
+        if existing_user:
+            # Don't leak that a user exists — respond generically.
+            return {"ok": True, "status": "received"}
+        ip_h = hash_ip(ip)
+        # Soft dedupe: cap applications per IP per day.
+        since = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+        recent = await _persistent_repo.count_recent_waitlist_by_ip(ip_h, since)
+        if recent >= 3:
+            raise HTTPException(429, "Too many applications from this network today.")
+        try:
+            entry = await _persistent_repo.create_waitlist_entry(
+                username=username, email=email, reason=reason, ip_hash=ip_h
+            )
+        except sqlite3.IntegrityError:
+            return {"ok": True, "status": "received"}
+        return {"ok": True, "status": "received", "id": entry["id"]}
+
+    # ── Auth endpoints ─────────────────────────────────────────────────
+    @app.post("/api/auth/register")
+    async def api_register(
+        body: AuthCredentials, response: Response, request: Request
+    ) -> dict:
+        if _persistent_repo is None:
+            raise HTTPException(503, "Database not ready")
+        cfg = get_settings()
+        rate_limit_or_raise(REGISTER_LIMITER, key=f"register:{client_ip(request)}")
+
+        username = validate_username(body.username)
+        email = validate_email(body.email)
+        password = validate_password(body.password)
+
+        # Invite-gated registration (default). Public registration requires explicit opt-in.
+        invite_entry: Optional[dict] = None
+        if not cfg.public_registration_enabled:
+            token_in = (body.invite_token or "").strip()
+            if not token_in:
+                raise HTTPException(
+                    403,
+                    "Registration is invite-only. Join the waitlist to request access.",
+                )
+            invite_entry = await _persistent_repo.consume_invite_token(token_in)
+            if not invite_entry:
+                raise HTTPException(400, "Invite link is invalid or has expired.")
+            # Bind the account to the exact username/email that was approved.
+            if invite_entry["username"].lower() != username.lower():
+                raise HTTPException(
+                    400,
+                    "This invite was issued for a different username.",
+                )
+            if invite_entry.get("email") and email and email != invite_entry["email"]:
+                raise HTTPException(
+                    400, "This invite was issued for a different email address."
+                )
+            if invite_entry.get("email") and not email:
+                email = invite_entry["email"]
+
+        salt, pwd_hash = hash_password(password)
+        try:
+            user = await _persistent_repo.create_user(username, email, salt, pwd_hash)
+        except sqlite3.IntegrityError:
+            raise HTTPException(409, "Username or email already in use") from None
+        await _maybe_bootstrap_admin(username)
+        full_user = await _persistent_repo.get_user_by_id(user["id"]) or user
+        session_token = new_session_token()
+        await _persistent_repo.create_session(user["id"], session_token, session_expiry())
+        _write_session_cookie(response, session_token)
+        return {"ok": True, "user": _user_public(full_user)}
+
+    @app.post("/api/auth/login")
+    async def api_login(
+        body: LoginCredentials, response: Response, request: Request
+    ) -> dict:
+        if _persistent_repo is None:
+            raise HTTPException(503, "Database not ready")
+        ip = client_ip(request)
+        rate_limit_or_raise(LOGIN_LIMITER, key=f"login:{ip}")
+        username = (body.username or "").strip()
+        if not username or not body.password:
+            raise HTTPException(400, "Username and password required")
+        row = await _persistent_repo.get_user_by_username(username)
+        invalid = not row or not verify_password(
+            body.password, row["password_salt"], row["password_hash"]
+        )
+        if invalid:
+            # Also count login attempts by username to slow targeted brute force.
+            rate_limit_or_raise(LOGIN_LIMITER, key=f"login-user:{username.lower()}")
+            raise HTTPException(401, "Invalid username or password")
+        assert row is not None
+        if not row.get("is_active", True):
+            raise HTTPException(403, "This account has been disabled.")
+        await _maybe_bootstrap_admin(row["username"])
+        session_token = new_session_token()
+        await _persistent_repo.create_session(row["id"], session_token, session_expiry())
+        await _persistent_repo.touch_user_login(row["id"])
+        _write_session_cookie(response, session_token)
+        # Refresh row so is_admin reflects any just-applied bootstrap promotion.
+        refreshed = await _persistent_repo.get_user_by_id(row["id"]) or row
+        return {"ok": True, "user": _user_public(refreshed)}
+
+    @app.post("/api/auth/logout")
+    async def api_logout(
+        response: Response,
+        user: Optional[dict] = Depends(get_optional_user),
+        session_token: Optional[str] = Cookie(default=None, alias="kb_session"),
+    ) -> dict:
+        _ = user
+        if session_token and _persistent_repo is not None:
+            try:
+                await _persistent_repo.delete_session(session_token)
+            except Exception:
+                pass
+        _clear_session_cookie(response)
+        return {"ok": True}
+
+    @app.get("/api/auth/me")
+    async def api_me(user: Optional[dict] = Depends(get_optional_user)) -> dict:
+        return {"authenticated": bool(user), "user": _user_public(user) if user else None}
+
+    # ── Admin endpoints ────────────────────────────────────────────────
+    @app.get("/api/admin/waitlist")
+    async def api_admin_waitlist(
+        status_filter: Optional[str] = None,
+        admin: dict = Depends(require_admin),
+    ) -> list[dict]:
+        _ = admin
+        if _persistent_repo is None:
+            raise HTTPException(503, "Database not ready")
+        if status_filter and status_filter not in {
+            "pending", "approved", "rejected", "consumed"
+        }:
+            raise HTTPException(400, "Invalid status filter")
+        rows = await _persistent_repo.list_waitlist(status_filter)
+        # Never leak ip_hash.
+        return rows
+
+    @app.post("/api/admin/waitlist/{entry_id}/approve")
+    async def api_admin_waitlist_approve(
+        entry_id: int, admin: dict = Depends(require_admin)
+    ) -> dict:
+        if _persistent_repo is None:
+            raise HTTPException(503, "Database not ready")
+        cfg = get_settings()
+        token = new_session_token()
+        expires = datetime.now(timezone.utc) + timedelta(hours=cfg.invite_ttl_hours)
+        result = await _persistent_repo.approve_waitlist_entry(
+            entry_id,
+            decided_by_user_id=admin["id"],
+            invite_token=token,
+            invite_expires_at=expires,
+        )
+        if not result:
+            raise HTTPException(404, "Waitlist entry not found or already decided.")
+        return {"ok": True, "entry": result}
+
+    @app.post("/api/admin/waitlist/{entry_id}/reject")
+    async def api_admin_waitlist_reject(
+        entry_id: int, admin: dict = Depends(require_admin)
+    ) -> dict:
+        if _persistent_repo is None:
+            raise HTTPException(503, "Database not ready")
+        result = await _persistent_repo.reject_waitlist_entry(
+            entry_id, decided_by_user_id=admin["id"]
+        )
+        if not result:
+            raise HTTPException(404, "Waitlist entry not found or already decided.")
+        return {"ok": True, "entry": result}
+
+    @app.get("/api/admin/users")
+    async def api_admin_users(admin: dict = Depends(require_admin)) -> list[dict]:
+        _ = admin
+        if _persistent_repo is None:
+            raise HTTPException(503, "Database not ready")
+        return await _persistent_repo.list_users()
+
+    @app.post("/api/admin/users/{user_id}/active")
+    async def api_admin_set_active(
+        user_id: int, body: SetBoolBody, admin: dict = Depends(require_admin)
+    ) -> dict:
+        if _persistent_repo is None:
+            raise HTTPException(503, "Database not ready")
+        if user_id == admin["id"] and not body.value:
+            raise HTTPException(400, "You cannot deactivate your own account.")
+        await _persistent_repo.set_user_active(user_id, body.value)
+        return {"ok": True}
+
+    @app.post("/api/admin/users/{user_id}/admin")
+    async def api_admin_set_admin(
+        user_id: int, body: SetBoolBody, admin: dict = Depends(require_admin)
+    ) -> dict:
+        if _persistent_repo is None:
+            raise HTTPException(503, "Database not ready")
+        if user_id == admin["id"] and not body.value:
+            raise HTTPException(400, "You cannot remove your own admin role.")
+        await _persistent_repo.set_user_admin(user_id, body.value)
+        return {"ok": True}
 
     return app
 

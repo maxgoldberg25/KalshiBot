@@ -10,7 +10,7 @@ import time
 import asyncio
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import httpx
 from cryptography.hazmat.primitives import hashes, serialization
@@ -158,6 +158,37 @@ class KalshiAdapter:
         if no_price is not None:
             payload["no_price"] = max(1, min(99, no_price))
         return await self._post("/portfolio/orders", payload)
+
+    async def get_market(self, ticker: str) -> Optional[dict]:
+        """GET /markets/{ticker}. Returns the raw market dict or None on failure."""
+        try:
+            data = await self._get(f"/markets/{ticker}")
+        except Exception:
+            return None
+        return data.get("market") if isinstance(data, dict) else None
+
+    async def list_market_trades(
+        self,
+        limit: int = 100,
+        ticker: Optional[str] = None,
+        min_ts: Optional[int] = None,
+        max_ts: Optional[int] = None,
+        cursor: Optional[str] = None,
+    ) -> dict:
+        """
+        Paginated public trade tape (GET /markets/trades).
+        Returns raw API payload: {"trades": [...], "cursor": "..."}.
+        """
+        params: dict[str, Any] = {"limit": max(1, min(int(limit), 1000))}
+        if ticker:
+            params["ticker"] = ticker
+        if min_ts is not None:
+            params["min_ts"] = int(min_ts)
+        if max_ts is not None:
+            params["max_ts"] = int(max_ts)
+        if cursor:
+            params["cursor"] = cursor
+        return await self._get("/markets/trades", params=params)
 
     async def list_markets(self, series_ticker: Optional[str] = None, limit: int = 100, status: str = "open") -> list[dict]:
         """

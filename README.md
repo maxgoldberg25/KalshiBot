@@ -1,6 +1,6 @@
 # KalshiBot — Kalshi vs Sportsbook Odds Scanner
 
-Automated edge detection between Kalshi prediction markets and traditional sportsbooks. Finds price discrepancies, ranks them by edge, and surfaces them in a real-time web dashboard. Optional Kalshi-side execution with manual sportsbook hedging.
+Automated edge detection between Kalshi prediction markets and traditional sportsbooks. Finds price discrepancies, ranks them by edge, and surfaces them in a real-time web dashboard. Ships with an **invite-only waitlist**, an **admin console**, a **live public-tape "Insider Watch"** feed, and a ready-to-deploy **Vercel frontend + standalone FastAPI backend** architecture. Optional Kalshi-side execution with manual sportsbook hedging.
 
 > **Disclaimer:** This tool detects *theoretical* price discrepancies. Sportsbook execution is manual. No guarantees of profit. Use for research and informational purposes only.
 
@@ -28,11 +28,13 @@ kalshi-odds dashboard
 # Open http://127.0.0.1:8080
 ```
 
-If `web/dist/` exists (after step 4), the server serves the **React + shadcn/ui** app (Hash routes: `/#/` home, `/#/scanner`). Otherwise it falls back to the legacy single-file template at `src/kalshi_odds/dashboard/templates/index.html`.
+If `web/dist/` exists (after step 4), the server serves the **React + shadcn/ui** app (Hash routes: `/#/` home, `/#/scanner`, `/#/insider`, `/#/admin`, `/#/login`). Otherwise it falls back to the legacy single-file template at `src/kalshi_odds/dashboard/templates/index.html`.
 
 **Dev (hot reload):** with the API on port 8080, run `cd web && npm run dev` (Vite proxies `/api` to `http://127.0.0.1:8080`). Open the URL Vite prints (usually `http://127.0.0.1:5173`).
 
 The dashboard auto-maps Kalshi game contracts to sportsbook events on startup and begins scanning immediately.
+
+> **First run, invite-only:** accounts are invite-only by default. To create the first admin, temporarily set `KALSHI_ODDS_PUBLIC_REGISTRATION_ENABLED=true`, register yourself, and set `KALSHI_ODDS_ADMIN_BOOTSTRAP_USERNAMES=<yourname>` — you'll be auto-promoted to admin on register/login. Then flip registration back to `false`. See [Accounts, waitlist & admin](#accounts-waitlist--admin).
 
 ---
 
@@ -60,16 +62,23 @@ src/kalshi_odds/
 │   ├── probability.py         # NormalizedProb, VigMethod
 │   └── comparison.py         # Alert, Opportunity, Direction, Confidence
 ├── dashboard/
-│   ├── server.py              # FastAPI app — REST API + SPA serving
+│   ├── server.py              # FastAPI app — REST API + SPA serving + auth/admin/waitlist
 │   └── templates/index.html   # Legacy SPA (Tabler + ApexCharts) if web/dist missing
-├── web/                       # Optional React + shadcn/ui dashboard (Vite)
-│   ├── src/                   # Home + Scanner pages, TanStack Query, Recharts
+├── web/                       # React + shadcn/ui dashboard (Vite) — deployable to Vercel
+│   ├── src/pages/             # Home, Scanner, InsiderWatch, Login, Admin
+│   ├── src/context/           # AuthContext (invite-only register, login, logout, refresh)
+│   ├── src/components/auth/   # RequireAuth, RequireAdmin, UserMenu
+│   ├── src/api/fetch.ts       # API client (uses VITE_API_BASE_URL for split deploys)
+│   ├── vercel.json            # SPA rewrites + security headers
 │   └── package.json
+├── auth.py                    # PBKDF2 hashing, session tokens, cookies, rate limiters, IP hashing
 ├── config.py                  # Pydantic-settings (env-based config)
-├── db.py                      # SQLite persistence via aiosqlite
+├── db.py                      # SQLite persistence via aiosqlite (users, sessions, waitlist, ...)
 ├── execution.py               # Kalshi order placement
 └── cli.py                     # Typer CLI
 ```
+
+Deployment docs live at [`DEPLOY.md`](./DEPLOY.md).
 
 ---
 
@@ -121,6 +130,141 @@ In your Kalshi account settings, generate an RSA key pair. Download the private 
 ### 3. Keep secrets out of git
 
 `.env` and `*.pem` are already in `.gitignore`. Never commit them.
+
+---
+
+## Accounts, waitlist & admin
+
+KalshiBot ships as a **closed platform**: no one can create an account without an admin-issued invite.
+
+### Flow
+
+1. A visitor opens `/login`, switches to the **Request access** tab, submits a username + email + optional reason.
+2. The entry lands in the `waitlist` table (status `pending`). Per-IP rate limits and per-day caps apply.
+3. An admin opens `/admin`, reviews the entry, and clicks **Approve** — the server generates a single-use, time-limited invite token (`KALSHI_ODDS_INVITE_TTL_HOURS`, default 7 days) and binds it to the approved username.
+4. Admin clicks **Copy invite link** (e.g. `https://yoursite.com/#/login?invite=<TOKEN>`) and sends it to the user through whatever channel they prefer (email, Slack, DM).
+5. The user clicks the link, lands in **Redeem invite** mode, picks a password, and their account is created and immediately logged in.
+6. Invite tokens are atomically consumed — a link can only be used once and only for the exact username approved.
+
+### Admin console (`/admin`)
+
+Available only when `is_admin = true` on your user. The page shows three tables:
+
+- **Pending waitlist** — approve or reject. Approve immediately generates an invite link.
+- **Decided applications** — copy an existing invite link (only if still valid), see whether tokens are used/expired.
+- **Users** — toggle `is_active` (disables login and kills existing sessions) and `is_admin`. You cannot disable or demote yourself.
+
+### Bootstrapping the first admin
+
+The first admin has to be created carefully because nothing grants admin by default.
+
+1. In `.env` (or your deployment env), set:
+   ```dotenv
+   KALSHI_ODDS_PUBLIC_REGISTRATION_ENABLED=true
+   KALSHI_ODDS_ADMIN_BOOTSTRAP_USERNAMES=yourname
+   ```
+2. Start the server and register the account named `yourname` from the SPA.
+3. `yourname` is auto-promoted to admin on register (and re-checked on every login for safety).
+4. Flip `KALSHI_ODDS_PUBLIC_REGISTRATION_ENABLED` back to `false` and redeploy.
+
+From that point on, every new account goes through the waitlist.
+
+### Security posture
+
+Backend:
+
+- **Passwords** — PBKDF2-SHA256, per-user 16-byte random salt, 240 000 iterations. Constant-time comparison.
+- **Sessions** — 256-bit `secrets.token_urlsafe` tokens stored server-side, delivered via HTTP-only cookies. 14-day TTL, expired sessions purged on startup and on access.
+- **Cookie flags** — configurable `Secure` and `SameSite` (`lax` by default; set `none` + `secure=true` for cross-origin Vercel / backend deployments).
+- **Rate limiting** — in-process sliding-window limiters on `/api/auth/login` (per-IP + per-username on failures), `/api/auth/register`, and `/api/waitlist`.
+- **CORS** — explicit allow-list only (never `*`), credentials-aware, only active when `KALSHI_ODDS_CORS_ORIGINS` is set.
+- **Security headers middleware** on every response: HSTS (when `SESSION_COOKIE_SECURE=true`), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, and a restrictive `Content-Security-Policy`.
+- **Invite tokens** — 256-bit, time-limited, single-use (atomic `UPDATE … WHERE status='approved'`), bound to the approved username (and email if provided).
+- **Disabled accounts** — cannot log in; existing sessions are invalidated on deactivation.
+- **`/api/execute`** and all `/api/admin/*` endpoints require `is_admin`, not just authentication.
+- **PII handling** — client IPs are hashed with an HMAC secret (`KALSHI_ODDS_IP_HASH_SECRET`) for the waitlist; raw IPs are never stored.
+- **Response hygiene** — login errors are generic (`Invalid username or password`); waitlist submissions for already-existing usernames return success to avoid user enumeration.
+
+Frontend:
+
+- All fetches use `credentials: "include"`.
+- `RequireAuth` / `RequireAdmin` wrappers re-check server-side state via `/api/auth/me` and redirect to `/login?next=…` when needed.
+- `web/vercel.json` mirrors the same security headers at the CDN edge.
+- No tokens are ever stored in `localStorage`; the only auth state the browser keeps is the HTTP-only cookie.
+
+---
+
+## Insider Watch (`/#/insider`)
+
+A real-time, authenticated view of **unusually large prints on the public Kalshi tape**, designed as a surveillance-style feed. The page combines:
+
+- **KPI strip** — total notional shown, unique markets, median / largest trade, net side imbalance, top-10 concentration share.
+- **Notional flow over time** — adaptive time buckets (1 min → 1 h depending on span), stacked by tier (`major ≥ $10k`, `large ≥ $2.5k`, `notable`) with a cumulative line and a zoom brush.
+- **Top markets Pareto** — notional by ticker with a cumulative concentration line.
+- **Side imbalance** — diverging bars (YES vs NO) per ticker so you can spot one-sided flow.
+- **Trade size distribution** — log-scaled histogram of trade notionals with cumulative density.
+- **Trade rows** — each row shows ticker, market title, subtitle, tier badge, side, price, contracts, notional, % of open interest, plus a deep link to the Kalshi market.
+
+Backend details:
+
+- Pulls `GET /markets/trades` (public tape, no counterparty identification — this is not "insider" in the legal sense; it surfaces *sized* activity).
+- Enriches each trade with market metadata (`/markets/{ticker}`) using an in-process TTL cache (120 s) and a per-request fetch cap to stay inside Kalshi rate limits.
+- Endpoint: `GET /api/trades/watch?min_notional=250&fetch_limit=500` (auth required).
+
+---
+
+## Deployment
+
+The app is **two pieces** and should be deployed as such:
+
+| Piece | Where | Why |
+|-------|-------|-----|
+| **Frontend** — static React/Vite SPA (`web/`) | **Vercel** (CDN, preview URLs, instant rollbacks) | Perfect fit for a static SPA |
+| **Backend** — FastAPI + SQLite + background scan loop | **Fly.io / Railway / Render / VPS** | Requires a persistent filesystem and an always-on process — **cannot** run on Vercel |
+
+> **Important:** the backend maintains a long-running scan loop and writes to a local SQLite file. Vercel functions are short-lived and stateless, so the scanner would never run and every login/waitlist entry would vanish on the next cold start. Keep the backend on real infrastructure.
+
+### Frontend on Vercel
+
+```bash
+cd web
+npx vercel@latest link            # one-time
+npx vercel@latest --prod          # deploy
+```
+
+Set these Vercel project env vars:
+
+| Key | Example | Notes |
+|-----|---------|-------|
+| `VITE_API_BASE_URL` | `https://api.your-domain.com` | Origin of your backend (no trailing slash). Leave empty to use same-origin (e.g. when the Python server serves `web/dist`). |
+
+`web/vercel.json` handles SPA rewrites and CDN-edge security headers (HSTS, XFO, XCTO, Referrer-Policy, Permissions-Policy, immutable caching for `/assets/*`).
+
+### Backend (Fly.io / Railway / VPS)
+
+Required env vars — all prefixed with `KALSHI_ODDS_`:
+
+| Key | Example | Why |
+|-----|---------|-----|
+| `KALSHI_API_KEY_ID` / `KALSHI_PRIVATE_KEY_PATH` | `abc…` / `/data/kalshi.pem` | Kalshi API credentials. |
+| `ODDS_API_KEY` | `…` | Odds API key. |
+| `DATABASE_URL` | `sqlite+aiosqlite:///data/kalshi_odds.db` | **Must point at a persistent volume.** |
+| `CORS_ORIGINS` | `https://your-frontend.vercel.app` | Comma-separated, exact origin match. Required when frontend and backend are on different domains. |
+| `SESSION_COOKIE_SECURE` | `true` | Required in production (HTTPS-only cookie). |
+| `SESSION_COOKIE_SAMESITE` | `none` | Use `none` for cross-origin Vercel ↔ backend. Requires `secure=true`. Use `lax` for same-origin. |
+| `PUBLIC_REGISTRATION_ENABLED` | `false` | **Default false** — keeps signups invite-only. |
+| `ADMIN_BOOTSTRAP_USERNAMES` | `yourname` | Comma-separated usernames auto-promoted to admin on startup and on their next login. |
+| `INVITE_TTL_HOURS` | `168` | Invite link lifetime (default 7 days). |
+| `IP_HASH_SECRET` | `openssl rand -hex 32` | Salt used to hash waitlist client IPs. |
+| `DASHBOARD_PORT` | `8080` | Listen port. |
+
+Start the server with:
+
+```bash
+uvicorn kalshi_odds.dashboard.server:create_app --factory --host 0.0.0.0 --port 8080
+```
+
+A Fly.io/Dockerfile template and a full walkthrough (including a worked first-admin bootstrap) live in [`DEPLOY.md`](./DEPLOY.md).
 
 ---
 
@@ -315,18 +459,47 @@ KALSHI_ODDS_MAX_NOTIONAL_PER_TRADE=100.0
 
 ## Dashboard API
 
-The dashboard exposes a REST API alongside the web UI:
+The dashboard exposes a REST API alongside the web UI. Auth column legend: `public` · `user` (any logged-in user) · `admin` (requires `is_admin`).
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | Web dashboard (SPA) |
-| `/api/state` | GET | Full scanner state: opportunities, positions, P&L, settings |
-| `/api/health` | GET | System health: Kalshi, odds providers, database, scanner |
-| `/api/config` | GET | Current configuration values |
-| `/api/scan` | POST | Trigger a manual scan |
-| `/api/auto-map` | POST | Re-build market mappings |
-| `/api/execute` | POST | Place Kalshi order (requires `EXECUTION_ENABLED=true`) |
-| `/api/alerts/recent` | GET | Last 20 alerts from database |
+### Web & health
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/` | GET | public | Web dashboard (SPA) |
+| `/api/health` | GET | public | System health: Kalshi, odds providers, database, scanner |
+| `/api/config` | GET | public | Current configuration values |
+
+### Auth
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/auth/me` | GET | public | Current user (or `{authenticated: false}` when anonymous) |
+| `/api/auth/login` | POST | public | `{ username, password }` — sets session cookie; rate-limited |
+| `/api/auth/register` | POST | public | `{ username, password, email?, invite_token }` — invite-gated unless `PUBLIC_REGISTRATION_ENABLED=true` |
+| `/api/auth/logout` | POST | user | Invalidates server session and clears cookie |
+| `/api/waitlist` | POST | public | `{ username, email?, reason? }` — creates a pending waitlist entry; rate-limited + per-IP daily cap |
+
+### Scanner & execution
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/state` | GET | user | Full scanner state: opportunities, positions, P&L, settings |
+| `/api/scan` | POST | user | Trigger a manual scan |
+| `/api/auto-map` | POST | user | Re-build market mappings |
+| `/api/alerts/recent` | GET | user | Last 20 alerts from database |
+| `/api/trades/watch` | GET | user | Insider-Watch feed — enriched large prints from the public Kalshi tape |
+| `/api/execute` | POST | **admin** | Place Kalshi order (requires `EXECUTION_ENABLED=true`) |
+
+### Admin
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/admin/waitlist?status_filter=` | GET | admin | List waitlist entries (filter by `pending` / `approved` / `rejected` / `consumed`) |
+| `/api/admin/waitlist/{id}/approve` | POST | admin | Approve entry — returns single-use invite token + expiry |
+| `/api/admin/waitlist/{id}/reject` | POST | admin | Reject entry |
+| `/api/admin/users` | GET | admin | List all users |
+| `/api/admin/users/{id}/active` | POST | admin | `{ value: boolean }` — toggle `is_active` (false kills existing sessions) |
+| `/api/admin/users/{id}/admin` | POST | admin | `{ value: boolean }` — toggle `is_admin` |
 
 ---
 
@@ -358,6 +531,18 @@ All settings use the `KALSHI_ODDS_` prefix in `.env`:
 | `DATABASE_URL` | `sqlite+aiosqlite:///kalshi_odds.db` | Database connection URL |
 | `OUTPUT_JSONL` | `alerts.jsonl` | Path for alert output log |
 
+### Auth, waitlist & web security
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `CORS_ORIGINS` | *(empty)* | Comma-separated exact-match allow-list. Leave empty when frontend and backend are the same origin. |
+| `SESSION_COOKIE_SECURE` | `false` | Mark the session cookie as `Secure`. **Set to `true` in any HTTPS deployment.** |
+| `SESSION_COOKIE_SAMESITE` | `lax` | `lax` (same-origin) / `strict` / `none` (cross-origin, requires `secure=true`). |
+| `PUBLIC_REGISTRATION_ENABLED` | `false` | When `false`, `/api/auth/register` requires a valid invite token. |
+| `ADMIN_BOOTSTRAP_USERNAMES` | *(empty)* | Comma-separated usernames auto-promoted to `is_admin=true` on startup and on register/login. |
+| `INVITE_TTL_HOURS` | `168` | Invite link lifetime in hours (default 7 days). |
+| `IP_HASH_SECRET` | *(default constant — override!)* | HMAC secret for hashing client IPs on waitlist entries. Set to a random 32-byte hex string in production. |
+
 ---
 
 ## Testing
@@ -384,7 +569,7 @@ Tests cover: odds conversion, vig removal, edge detection, confidence scoring, s
 |------|-------------|
 | `mappings.yaml` | Auto-generated market mapping (Kalshi ↔ sportsbook) |
 | `alerts.jsonl` | Append-only log of all triggered alerts |
-| `kalshi_odds.db` | SQLite database (alerts, positions, settled trades) |
+| `kalshi_odds.db` | SQLite database (alerts, positions, settled trades, users, sessions, waitlist) |
 | `.last_opportunities.json` | Last scan's opportunities, used for dashboard persistence across restarts |
 
 ---
@@ -429,6 +614,18 @@ A: No. Only the Kalshi leg can be placed via API. Sportsbook execution is manual
 
 **Q: How do I add a new sport?**
 A: Add the sport key → Kalshi series mapping in `core/automapper.py` (`SPORT_TO_SERIES`) and the team code → name keywords in `TEAM_CODE_KEYWORDS`. Also add the ESPN path in `adapters/espn.py` (`SPORT_TO_ESPN_PATH`).
+
+**Q: Can I deploy the whole thing to Vercel?**
+A: Only the frontend. Vercel's serverless runtime can't host the persistent scan loop or a local SQLite file. Deploy `web/` to Vercel and the FastAPI backend to Fly.io, Railway, Render, or a VPS. See [`DEPLOY.md`](./DEPLOY.md).
+
+**Q: Registration returns "Registration is invite-only." — is this a bug?**
+A: No — that's the default. To register, either (1) have an admin approve you on `/admin` and use the invite link they send, or (2) as the operator, set `KALSHI_ODDS_PUBLIC_REGISTRATION_ENABLED=true` temporarily to bootstrap your own account, then turn it back off.
+
+**Q: How do I become admin?**
+A: Add your username to `KALSHI_ODDS_ADMIN_BOOTSTRAP_USERNAMES` (comma-separated). On the next register/login the server auto-promotes matching usernames.
+
+**Q: Why does login keep failing after deploying behind HTTPS?**
+A: Your cookie is probably being blocked. In HTTPS/production set `KALSHI_ODDS_SESSION_COOKIE_SECURE=true`. If frontend and backend are on different origins (Vercel ↔ your backend), also set `KALSHI_ODDS_SESSION_COOKIE_SAMESITE=none` and add the frontend origin to `KALSHI_ODDS_CORS_ORIGINS`.
 
 ---
 

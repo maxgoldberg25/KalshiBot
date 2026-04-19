@@ -71,6 +71,32 @@ class Settings(BaseSettings):
         description="Minimum confidence for auto-execute in run loop: low, med, high",
     )
 
+    # ── Web / security ──────────────────────────────────────────────────────
+    cors_origins: str = Field(
+        default="",
+        description="Comma-separated list of allowed origins for CORS (exact matches only). Leave empty to disable cross-origin requests.",
+    )
+    session_cookie_secure: bool = Field(
+        default=False,
+        description="Mark session cookie as Secure (required when serving over HTTPS).",
+    )
+    session_cookie_samesite: str = Field(
+        default="lax",
+        description='Session cookie SameSite attribute: "lax", "strict", or "none". Use "none" for cross-site (requires secure=true).',
+    )
+    public_registration_enabled: bool = Field(
+        default=False,
+        description="If False, /api/auth/register requires a valid invite token issued from the waitlist.",
+    )
+    admin_bootstrap_usernames: str = Field(
+        default="",
+        description="Comma-separated usernames automatically promoted to admin on startup.",
+    )
+    invite_ttl_hours: int = Field(
+        default=168,
+        description="How long an approved invite token remains valid (default 7 days).",
+    )
+
     # ── Helpers ─────────────────────────────────────────────────────────────
 
     @property
@@ -88,6 +114,21 @@ class Settings(BaseSettings):
     @property
     def sport_list(self) -> list[str]:
         return [s.strip() for s in self.default_sport.split(",") if s.strip()]
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def admin_bootstrap_list(self) -> list[str]:
+        return [u.strip().lower() for u in self.admin_bootstrap_usernames.split(",") if u.strip()]
+
+    @property
+    def session_samesite_normalized(self) -> str:
+        value = (self.session_cookie_samesite or "lax").strip().lower()
+        if value not in {"lax", "strict", "none"}:
+            return "lax"
+        return value
 
 
 def get_settings(**overrides) -> Settings:  # type: ignore

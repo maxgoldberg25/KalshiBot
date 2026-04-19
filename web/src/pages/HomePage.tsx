@@ -1,20 +1,35 @@
+import { ChevronDown } from "lucide-react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import type { LucideIcon } from "lucide-react"
-import { Activity, BarChart3, Loader2, TrendingUp, Wallet, Zap } from "lucide-react"
 import { toast } from "sonner"
 import { fetchHealth, fetchState, postScan } from "@/api/fetch"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { fmtMoney, fmtTime, fmtUptime } from "@/lib/format"
+import { HeroStage } from "@/components/fx/HeroStage"
+import { ScrollProgress } from "@/components/fx/ScrollProgress"
+import { CtaBand } from "@/components/home/CtaBand"
+import { EdgeShowcase } from "@/components/home/EdgeShowcase"
+import { FeatureGrid } from "@/components/home/FeatureGrid"
+import { HowItWorks } from "@/components/home/HowItWorks"
+import { LeagueMarquee } from "@/components/home/LeagueMarquee"
+import { MetricsBand } from "@/components/home/MetricsBand"
+import { ScanTimeline } from "@/components/home/ScanTimeline"
+import { useAuth } from "@/context/AuthContext"
+import { fmtTime, fmtUptime } from "@/lib/format"
 import { cn } from "@/lib/utils"
-import { NavLink } from "react-router-dom"
 
 export function HomePage() {
   const qc = useQueryClient()
-  const stateQ = useQuery({ queryKey: ["state"], queryFn: fetchState, refetchInterval: 30_000 })
+  const { status: authStatus } = useAuth()
+  const isAuthed = authStatus === "authed"
+
+  const stateQ = useQuery({
+    queryKey: ["state"],
+    queryFn: fetchState,
+    refetchInterval: 30_000,
+    enabled: isAuthed,
+  })
   const healthQ = useQuery({ queryKey: ["health"], queryFn: fetchHealth, refetchInterval: 30_000 })
   const scanM = useMutation({
     mutationFn: postScan,
@@ -29,135 +44,61 @@ export function HomePage() {
 
   const d = stateQ.data
   const h = healthQ.data
-  const loading = stateQ.isPending || healthQ.isPending
-  const err = stateQ.error ?? healthQ.error
+  const loading = (isAuthed && stateQ.isPending) || healthQ.isPending
+  const err = (isAuthed ? stateQ.error : null) ?? healthQ.error
 
   const healthy = h?.status === "healthy"
   const opps = d?.opportunities?.length ?? 0
   const pnl = d?.pnl?.total_realized_pnl ?? 0
 
   return (
-    <>
-      {/* ── Hero ───────────────────────────────────────────────────────── */}
-      <section className="border-b border-border/40 bg-gradient-to-b from-card/70 to-background">
-        <div className="mx-auto max-w-6xl px-4 pb-10 pt-12">
+    <div className="relative isolate">
+      <ScrollProgress />
 
-          {/* Brand row */}
-          <div className="mb-2 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/15 ring-1 ring-primary/25 shadow-[0_0_24px_0] shadow-primary/10">
-                <TrendingUp className="h-7 w-7 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-extrabold tracking-tight text-foreground">
-                  KalshiBot
-                </h1>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  Kalshi vs sportsbook arbitrage scanner
-                </p>
-              </div>
-            </div>
+      {/* Ambient page-wide background */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-aurora animate-aurora opacity-60" />
+        <div className="absolute inset-0 bg-noise opacity-[0.03]" />
+        <div className="absolute inset-x-0 bottom-0 h-96 bg-gradient-to-t from-background via-background/80 to-transparent" />
+      </div>
 
-            {/* Status + scanning indicator */}
-            <div className="flex items-center gap-2.5 sm:pt-1">
-              {d?.is_scanning && (
-                <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-400">
-                  <span className="size-2 animate-pulse rounded-full bg-emerald-400" />
-                  Scanning
-                </span>
-              )}
-              {!loading && (
-                <Badge
-                  className={cn(
-                    "rounded px-2.5 py-0.5 text-[0.65rem] font-semibold uppercase tracking-widest",
-                    healthy
-                      ? "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30"
-                      : "bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30"
-                  )}
-                >
-                  {h?.status ?? "—"}
-                </Badge>
-              )}
-            </div>
-          </div>
+      <div className="relative">
+        <HeroStage
+          status={h?.status ?? undefined}
+          healthy={healthy}
+          uptimeLabel={fmtUptime(h?.uptime_seconds)}
+          isScanning={!!d?.is_scanning}
+          metrics={{
+            liveOpps: opps,
+            mappedMarkets: d?.mapped_count ?? 0,
+            totalScans: d?.scan_count ?? 0,
+            realizedPnl: pnl,
+          }}
+          onScan={isAuthed ? () => scanM.mutate() : undefined}
+          scanning={scanM.isPending}
+        />
 
-          {/* Description */}
-          <p className="mb-7 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Automatically maps Kalshi prediction markets to live sportsbook lines, detects mispricings,
-            and surfaces actionable arbitrage opportunities in real time.
-            Uptime: <span className="text-foreground">{fmtUptime(h?.uptime_seconds)}</span>.
-          </p>
-
-          {/* CTAs */}
-          <div className="mb-10 flex flex-wrap gap-2.5">
-            <Button asChild size="default" className="gap-2">
-              <NavLink to="/scanner">
-                <BarChart3 className="size-4" aria-hidden />
-                Open Scanner
-              </NavLink>
-            </Button>
-            <Button
-              variant="outline"
-              size="default"
-              className="gap-2"
-              disabled={scanM.isPending}
-              onClick={() => scanM.mutate()}
-              aria-busy={scanM.isPending}
-            >
-              {scanM.isPending ? (
-                <Loader2 className="size-4 animate-spin" aria-hidden />
-              ) : (
-                <Zap className="size-4" aria-hidden />
-              )}
-              Scan now
-            </Button>
-          </div>
-
-          {/* Live stat strip */}
-          {loading ? (
-            <div className="flex gap-8">
-              {[...Array(4)].map((_, i) => (
-                <Skeleton key={i} className="h-10 w-20 rounded" />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-end gap-0 divide-x divide-border/40">
-              <HeroStat
-                label="Live opps"
-                value={String(opps)}
-                icon={TrendingUp}
-                accent={opps > 0}
-              />
-              <HeroStat
-                label="Mapped markets"
-                value={String(d?.mapped_count ?? 0)}
-                icon={BarChart3}
-              />
-              <HeroStat
-                label="Total scans"
-                value={String(d?.scan_count ?? 0)}
-                icon={Activity}
-              />
-              <HeroStat
-                label="Realized P&L"
-                value={fmtMoney(pnl)}
-                icon={Wallet}
-                accent={pnl > 0}
-                negative={pnl < 0}
-                mono
-              />
-            </div>
-          )}
+        {/* Scroll hint */}
+        <div className="pointer-events-none -mt-2 flex flex-col items-center gap-1 text-muted-foreground">
+          <span className="font-mono text-[0.6rem] uppercase tracking-[0.3em]">scroll</span>
+          <ChevronDown className="size-4 animate-scroll-hint" aria-hidden />
         </div>
-      </section>
+      </div>
 
-      {/* ── Body ───────────────────────────────────────────────────────── */}
       <div className="mx-auto max-w-6xl space-y-5 px-4 py-6">
         {err ? (
           <Alert variant="destructive">
             <AlertDescription>{String((err as Error).message)}</AlertDescription>
           </Alert>
         ) : null}
+
+        {!isAuthed && (
+          <Alert>
+            <AlertDescription>
+              Sign in to unlock the live scanner, insider watch, and execution tools.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Health + Status */}
         <div className="grid gap-3 lg:grid-cols-5">
@@ -206,7 +147,7 @@ export function HomePage() {
             </CardContent>
           </Card>
 
-          <Card className="lg:col-span-2">
+          <Card className={cn("lg:col-span-2", !isAuthed && "opacity-60")}>
             <CardHeader className="pb-2 pt-4">
               <CardTitle className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 <span>Scan status</span>
@@ -245,7 +186,7 @@ export function HomePage() {
         </div>
 
         {/* Active sports */}
-        {!loading && !!d?.sports?.length && (
+        {isAuthed && !loading && !!d?.sports?.length && (
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-muted-foreground">Active sports:</span>
             {d.sports.map((s) => (
@@ -260,46 +201,21 @@ export function HomePage() {
           </div>
         )}
       </div>
-    </>
+
+      <LeagueMarquee />
+
+      <HowItWorks />
+      <EdgeShowcase />
+      <MetricsBand />
+      <FeatureGrid />
+      <ScanTimeline />
+
+      <CtaBand />
+    </div>
   )
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
-
-function HeroStat({
-  label,
-  value,
-  icon: Icon,
-  accent,
-  negative,
-  mono,
-}: {
-  label: string
-  value: string
-  icon: LucideIcon
-  accent?: boolean
-  negative?: boolean
-  mono?: boolean
-}) {
-  return (
-    <div className="flex flex-col px-6 py-1 first:pl-0 last:pr-0">
-      <span className="mb-1 flex items-center gap-1.5 text-[0.65rem] font-medium uppercase tracking-wider text-muted-foreground">
-        <Icon className="size-3" aria-hidden />
-        {label}
-      </span>
-      <span
-        className={cn(
-          "text-2xl font-bold tabular-nums tracking-tight",
-          mono && "font-mono text-xl",
-          accent && "text-emerald-400",
-          negative && "text-red-400"
-        )}
-      >
-        {value}
-      </span>
-    </div>
-  )
-}
 
 function HealthRow({ label, ok, detail }: { label: string; ok: boolean; detail: string }) {
   return (
