@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from kalshi_odds.adapters.kalshi import KalshiAdapter
+from kalshi_odds.adapters.kalshi import kalshi_adapter_from_settings
 from kalshi_odds.config import Settings
 from kalshi_odds.core.portfolio import Position, PositionStatus
 from kalshi_odds.db import AnyRepository
@@ -31,10 +31,7 @@ async def place_opportunity_order(
     action = "sell" if opp.direction == Direction.KALSHI_RICH else "buy"
     price_cents = max(1, min(99, opp.kalshi_price_cents))
 
-    async with KalshiAdapter(
-        api_key_id=settings.kalshi_api_key_id,
-        private_key_path=settings.kalshi_private_key_path,
-    ) as kalshi:
+    async with kalshi_adapter_from_settings(settings) as kalshi:
         result = await kalshi.place_order(
             ticker=opp.kalshi_ticker,
             side=side,

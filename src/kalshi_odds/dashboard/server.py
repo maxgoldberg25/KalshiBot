@@ -21,7 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from kalshi_odds.adapters.kalshi import KalshiAdapter
+from kalshi_odds.adapters.kalshi import KalshiAdapter, kalshi_adapter_from_settings
 from kalshi_odds.adapters.kalshi_web_url import resolve_kalshi_market_web_urls
 from kalshi_odds.adapters.odds_api import OddsAPIAdapter
 from kalshi_odds.adapters.odds_provider import create_odds_provider, FallbackOddsProvider
@@ -904,12 +904,7 @@ async def _run_standalone_scan(settings: Settings) -> tuple[int, Optional[str]]:
         return 0, "Kalshi or Odds API not configured"
     odds_api = create_odds_provider(settings)
     async with (
-        KalshiAdapter(
-            api_key_id=settings.kalshi_api_key_id,
-            private_key_path=settings.kalshi_private_key_path,
-            base_url=settings.kalshi_base_url,
-            requests_per_second=settings.kalshi_requests_per_second,
-        ) as kalshi,
+        kalshi_adapter_from_settings(settings) as kalshi,
         PolymarketAdapter() as polymarket,
         make_repository(settings.database_url) as repo,
     ):
@@ -949,12 +944,7 @@ async def _dashboard_lifespan(app: FastAPI):
 
     kalshi: Optional[KalshiAdapter] = None
     if s.kalshi_configured:
-        kalshi = KalshiAdapter(
-            api_key_id=s.kalshi_api_key_id,
-            private_key_path=s.kalshi_private_key_path,
-            base_url=s.kalshi_base_url,
-            requests_per_second=s.kalshi_requests_per_second,
-        )
+        kalshi = kalshi_adapter_from_settings(s)
         await kalshi.connect()
         _persistent_kalshi = kalshi
 
@@ -1142,11 +1132,7 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
                 total = await _do_auto_map(_persistent_kalshi, _persistent_odds, s)
             else:
                 odds_api = create_odds_provider(s)
-                async with KalshiAdapter(
-                    api_key_id=s.kalshi_api_key_id,
-                    private_key_path=s.kalshi_private_key_path,
-                    base_url=s.kalshi_base_url,
-                ) as kalshi:
+                async with kalshi_adapter_from_settings(s) as kalshi:
                     await odds_api.connect()
                     try:
                         total = await _do_auto_map(kalshi, odds_api, s)
@@ -1300,12 +1286,7 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
                 raw = await _pull_tape_paginated(_persistent_kalshi, fetch_limit)
                 payload = await _build_tape_payload(_persistent_kalshi, raw, floor)
             else:
-                async with KalshiAdapter(
-                    api_key_id=s.kalshi_api_key_id,
-                    private_key_path=s.kalshi_private_key_path,
-                    base_url=s.kalshi_base_url,
-                    requests_per_second=s.kalshi_requests_per_second,
-                ) as k:
+                async with kalshi_adapter_from_settings(s) as k:
                     raw = await _pull_tape_paginated(k, fetch_limit)
                     payload = await _build_tape_payload(k, raw, floor)
             return {

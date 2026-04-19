@@ -34,9 +34,11 @@ class KalshiAdapter:
         private_key_path: str,
         base_url: str = "https://api.elections.kalshi.com/trade-api/v2",
         requests_per_second: float = 5.0,
+        private_key_pem: str = "",
     ) -> None:
         self._api_key_id = api_key_id
         self._private_key_path = private_key_path
+        self._private_key_pem = (private_key_pem or "").strip()
         self._base_url = base_url.rstrip("/")
         self._min_delay = 1.0 / requests_per_second
         self._last_request_time = 0.0
@@ -45,11 +47,23 @@ class KalshiAdapter:
 
     async def connect(self) -> None:
         """Initialize connection."""
-        key_path = Path(self._private_key_path)
-        if not key_path.exists():
-            raise FileNotFoundError(f"Kalshi private key not found: {key_path}")
-
-        key_data = key_path.read_bytes()
+        if self._private_key_pem:
+            pem = self._private_key_pem.replace("\\n", "\n").strip()
+            if "BEGIN" not in pem or "PRIVATE KEY" not in pem:
+                raise ValueError(
+                    "Kalshi private key PEM is invalid or empty "
+                    "(set KALSHI_ODDS_KALSHI_PRIVATE_KEY_PEM to full PEM including BEGIN/END lines)."
+                )
+            key_data = pem.encode("utf-8")
+        else:
+            key_path = Path(self._private_key_path)
+            if not key_path.exists():
+                raise FileNotFoundError(
+                    f"Kalshi private key not found: {key_path}. "
+                    "Either place the PEM file on disk and set KALSHI_ODDS_KALSHI_PRIVATE_KEY_PATH, "
+                    "or set KALSHI_ODDS_KALSHI_PRIVATE_KEY_PEM (see .env.example)."
+                )
+            key_data = key_path.read_bytes()
         self._private_key = serialization.load_pem_private_key(key_data, password=None)  # type: ignore
 
         self._client = httpx.AsyncClient(
@@ -324,3 +338,14 @@ class KalshiAdapter:
 
     async def __aexit__(self, *exc) -> None:
         await self.close()
+
+
+def kalshi_adapter_from_settings(settings: Any) -> KalshiAdapter:
+    """Build adapter from ``Settings`` (supports PEM via ``KALSHI_ODDS_KALSHI_PRIVATE_KEY_PEM``)."""
+    return KalshiAdapter(
+        api_key_id=settings.kalshi_api_key_id,
+        private_key_path=settings.kalshi_private_key_path,
+        base_url=settings.kalshi_base_url,
+        requests_per_second=settings.kalshi_requests_per_second,
+        private_key_pem=settings.kalshi_private_key_pem,
+    )

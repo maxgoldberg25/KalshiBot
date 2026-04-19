@@ -20,7 +20,14 @@ class Settings(BaseSettings):
 
     # ── Kalshi ──────────────────────────────────────────────────────────────
     kalshi_api_key_id: str = Field(default="", description="Kalshi API Key ID")
-    kalshi_private_key_path: str = Field(default="", description="Path to Kalshi RSA private key")
+    kalshi_private_key_path: str = Field(default="", description="Path to Kalshi RSA private key (PEM file)")
+    kalshi_private_key_pem: str = Field(
+        default="",
+        description=(
+            "Raw PEM text for Kalshi RSA private key (use on Render when you cannot mount a file). "
+            "If set, this takes precedence over kalshi_private_key_path. Use \\n for newlines in a single-line env value."
+        ),
+    )
     kalshi_base_url: str = Field(default="https://api.elections.kalshi.com/trade-api/v2")
     kalshi_requests_per_second: float = Field(default=5.0)
 
@@ -115,7 +122,11 @@ class Settings(BaseSettings):
 
     @property
     def kalshi_configured(self) -> bool:
-        return bool(self.kalshi_api_key_id and self.kalshi_private_key_path)
+        if not self.kalshi_api_key_id:
+            return False
+        if (self.kalshi_private_key_pem or "").strip():
+            return True
+        return bool(self.kalshi_private_key_path)
 
     @property
     def odds_api_configured(self) -> bool:

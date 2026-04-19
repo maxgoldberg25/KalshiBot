@@ -13,7 +13,7 @@ from rich.console import Console
 from rich.table import Table
 
 from kalshi_odds.config import get_settings
-from kalshi_odds.adapters.kalshi import KalshiAdapter
+from kalshi_odds.adapters.kalshi import kalshi_adapter_from_settings
 from kalshi_odds.adapters.odds_api import OddsAPIAdapter
 from kalshi_odds.adapters.odds_provider import create_odds_provider
 from kalshi_odds.core.automapper import auto_map as run_auto_map
@@ -107,16 +107,14 @@ def sync_kalshi() -> None:
     settings = get_settings()
     
     if not settings.kalshi_configured:
-        console.print("[red]✗ Kalshi not configured. Set KALSHI_ODDS_KALSHI_API_KEY_ID and KALSHI_ODDS_KALSHI_PRIVATE_KEY_PATH[/]")
+        console.print(
+            "[red]✗ Kalshi not configured. Set KALSHI_ODDS_KALSHI_API_KEY_ID and "
+            "KALSHI_ODDS_KALSHI_PRIVATE_KEY_PATH or KALSHI_ODDS_KALSHI_PRIVATE_KEY_PEM[/]"
+        )
         raise typer.Exit(1)
 
     async def _run():
-        async with KalshiAdapter(
-            api_key_id=settings.kalshi_api_key_id,
-            private_key_path=settings.kalshi_private_key_path,
-            base_url=settings.kalshi_base_url,
-            requests_per_second=settings.kalshi_requests_per_second,
-        ) as kalshi, make_repository(settings.database_url) as repo:
+        async with kalshi_adapter_from_settings(settings) as kalshi, make_repository(settings.database_url) as repo:
             console.print("[blue]Fetching Kalshi contracts...[/]")
             contracts = await kalshi.list_contracts()
             
@@ -289,10 +287,7 @@ def scan(
     async def _run():
         odds_api = create_odds_provider(settings)
         async with (
-            KalshiAdapter(
-                api_key_id=settings.kalshi_api_key_id,
-                private_key_path=settings.kalshi_private_key_path,
-            ) as kalshi,
+            kalshi_adapter_from_settings(settings) as kalshi,
             make_repository(settings.database_url) as repo,
         ):
             await odds_api.connect()
@@ -365,10 +360,7 @@ def run(
     async def _run():
         odds_api = create_odds_provider(settings)
         async with (
-            KalshiAdapter(
-                api_key_id=settings.kalshi_api_key_id,
-                private_key_path=settings.kalshi_private_key_path,
-            ) as kalshi,
+            kalshi_adapter_from_settings(settings) as kalshi,
             make_repository(settings.database_url) as repo,
         ):
             await odds_api.connect()
