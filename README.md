@@ -163,9 +163,11 @@ The first admin has to be created carefully because nothing grants admin by defa
    KALSHI_ODDS_PUBLIC_REGISTRATION_ENABLED=true
    KALSHI_ODDS_ADMIN_BOOTSTRAP_USERNAMES=yourname
    ```
-2. Start the server and register the account named `yourname` from the SPA.
+2. Start the server and register the account named `yourname` from the SPA, **or** from the repo root run `./scripts/bootstrap-register.sh` after exporting `KALSHI_BOOTSTRAP_USER` and `KALSHI_BOOTSTRAP_PASS` (they must match the bootstrap username and a password ≥8 characters). The script prints the JSON body and HTTP status instead of using silent `curl`.
 3. `yourname` is auto-promoted to admin on register (and re-checked on every login for safety).
 4. Flip `KALSHI_ODDS_PUBLIC_REGISTRATION_ENABLED` back to `false` and redeploy.
+
+If `HTTP 404` appears on `/api/auth/register`, the process serving port 8080 is not this repo’s dashboard (or an old install). Reinstall from the repo root with `pip install -e .` and restart `kalshi-odds dashboard`. If you see `HTTP 403`, registration is still invite-only — confirm `KALSHI_ODDS_PUBLIC_REGISTRATION_ENABLED=true` in `.env` and restart the server.
 
 From that point on, every new account goes through the waitlist.
 
