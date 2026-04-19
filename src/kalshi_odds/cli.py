@@ -1,4 +1,4 @@
-"""CLI entrypoint for Kalshi vs Sportsbook odds scanner."""
+"""CLI entrypoint for KalshiInsider (Kalshi vs sportsbook odds scanner)."""
 
 from __future__ import annotations
 
