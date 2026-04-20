@@ -124,7 +124,7 @@ _MARKET_META_TTL_SECONDS = 120.0
 
 # Bumped when the insider-watch sports filter logic changes, so the frontend
 # (and operators reading the JSON) can verify which version is live.
-INSIDER_FILTER_VERSION = "insider-watch/6"
+INSIDER_FILTER_VERSION = "insider-watch/7"
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -239,13 +239,29 @@ _SPORTS_STATLINE_RE = re.compile(
 )
 
 # Kalshi parlay vehicles. MVE* = Multi-Variable Event; CROSSCATEGORY is the
-# sub-product. In practice these are almost exclusively sports parlays, but
-# we still gate on title content so a non-sports parlay would slip through.
-_MVE_PARLAY_PREFIXES: tuple[str, ...] = ("MVE", "MVECROSSCATEGORY")
+# sub-product. By design these are combos of multiple underlying markets, so
+# insider-signal framing doesn't apply: the leg-level conviction is diluted
+# and the "market" rendered on the card is a synthetic basket rather than a
+# single event a user can act on cleanly.
+_PARLAY_PREFIXES: tuple[str, ...] = (
+    "MVE",
+    "MVECROSSCATEGORY",
+    "PARLAY",
+    "COMBO",
+    "MULTIEVENT",
+    "MULTIMARKET",
+)
 
 
-def _prefix_is_mve_parlay(prefix: str) -> bool:
-    return any(prefix.startswith(p) for p in _MVE_PARLAY_PREFIXES)
+def _prefix_is_parlay(prefix: str) -> bool:
+    return any(prefix.startswith(p) for p in _PARLAY_PREFIXES)
+
+
+# Matches "yes Foo", "no Bar" style leg labels produced by Kalshi's parlay
+# renderer. The insider-watch card for a parlay shows several of these joined
+# by commas, e.g. "yes Benjamin Bonzi,yes Nicolai Budkov Kjaer,yes Cristian
+# Garin". We treat any title with ≥2 such legs as a parlay.
+_PARLAY_LEG_RE = re.compile(r"\b(?:yes|no)\s+[A-Z][^,]{1,80}", re.IGNORECASE)
 
 
 def _title_looks_sports(meta: Optional[dict]) -> bool:
@@ -282,11 +298,50 @@ def _is_sports_market(ticker: Optional[str], meta: Optional[dict]) -> bool:
     prefix = _series_prefix(ticker)
     if _prefix_looks_sports(prefix):
         return True
-    # MVE parlays: drop if title/subtitle contains any sports wording.
-    if _prefix_is_mve_parlay(prefix) and _title_looks_sports(meta):
-        return True
     # General title fallback (catches markets with missing prefix tokens).
     return _title_looks_sports(meta)
+
+
+def _title_looks_like_parlay(meta: Optional[dict]) -> bool:
+    """True if any title/subtitle field looks like a comma-joined multi-leg parlay.
+
+    Kalshi renders parlay titles as "yes <Leg1>,yes <Leg2>,yes <Leg3>…" (or the
+    NO equivalent). A single "yes X" phrase is a normal single-market title —
+    we only flag when at least two such legs are joined by commas.
+    """
+    if not meta:
+        return False
+    for field in ("title", "subtitle", "yes_sub_title", "no_sub_title"):
+        val = meta.get(field)
+        if not isinstance(val, str) or not val.strip():
+            continue
+        legs = _PARLAY_LEG_RE.findall(val)
+        if len(legs) >= 2 and val.count(",") >= 1:
+            return True
+    return False
+
+
+def _is_parlay_market(ticker: Optional[str], meta: Optional[dict]) -> bool:
+    """Drop Kalshi parlay products: they are synthetic multi-leg baskets.
+
+    Insider-watch conviction doesn't map cleanly to parlays (the signal is
+    diluted across legs) and the card can't surface a single executable
+    YES/NO quote users can act on, so the only sane thing is to exclude.
+    """
+    if _prefix_is_parlay(_series_prefix(ticker)):
+        return True
+    if meta:
+        event = meta.get("event_ticker")
+        if isinstance(event, str) and _prefix_is_parlay(_series_prefix(event)):
+            return True
+        series = meta.get("series_ticker")
+        if isinstance(series, str):
+            s_up = series.upper()
+            if s_up.startswith("KX"):
+                s_up = s_up[2:]
+            if _prefix_is_parlay(s_up):
+                return True
+    return _title_looks_like_parlay(meta)
 
 
 def _tier_from_notional(notional: float) -> str:
@@ -315,7 +370,9 @@ def _score_tape_rows(raw_trades: list[dict], min_notional: float) -> list[dict]:
             count = float(str(t.get("count_fp", "0")))
             yp = float(str(t.get("yes_price_dollars", "0")))
             np = float(str(t.get("no_price_dollars", "0")))
-            side = t.get("taker_side") or "yes"
+            side = _normalize_taker_side(t.get("taker_side"))
+            if side is None:
+                continue
             price = yp if side == "yes" else np
             notional = count * price
             if notional < min_notional:
@@ -350,6 +407,21 @@ def _f(v: Any) -> Optional[float]:
         return None
 
 
+def _clamp_prob(v: Optional[float]) -> Optional[float]:
+    if v is None:
+        return None
+    return max(0.0, min(1.0, v))
+
+
+def _normalize_taker_side(side: Any) -> Optional[str]:
+    s = str(side or "").strip().lower()
+    if s in {"yes", "buy_yes", "buy-yes"}:
+        return "yes"
+    if s in {"no", "buy_no", "buy-no"}:
+        return "no"
+    return None
+
+
 def _flatten_market(raw: dict) -> dict:
     """Pick the fields we actually surface in the UI from the /markets/{ticker} payload."""
     last = _f(raw.get("last_price_dollars"))
@@ -357,6 +429,20 @@ def _flatten_market(raw: dict) -> dict:
     change = None
     if last is not None and prev is not None and prev != 0:
         change = round((last - prev), 4)
+    yes_bid = _clamp_prob(_f(raw.get("yes_bid_dollars")))
+    yes_ask = _clamp_prob(_f(raw.get("yes_ask_dollars")))
+    no_bid = _clamp_prob(_f(raw.get("no_bid_dollars")))
+    no_ask = _clamp_prob(_f(raw.get("no_ask_dollars")))
+
+    # Keep YES/NO cards consistent even if one side is omitted by upstream payloads.
+    if no_ask is None and yes_bid is not None:
+        no_ask = _clamp_prob(round(1.0 - yes_bid, 4))
+    if no_bid is None and yes_ask is not None:
+        no_bid = _clamp_prob(round(1.0 - yes_ask, 4))
+    if yes_ask is None and no_bid is not None:
+        yes_ask = _clamp_prob(round(1.0 - no_bid, 4))
+    if yes_bid is None and no_ask is not None:
+        yes_bid = _clamp_prob(round(1.0 - no_ask, 4))
     return {
         "ticker": raw.get("ticker"),
         "event_ticker": raw.get("event_ticker"),
@@ -369,10 +455,10 @@ def _flatten_market(raw: dict) -> dict:
         "status": raw.get("status"),
         "close_time": raw.get("close_time"),
         "expected_expiration_time": raw.get("expected_expiration_time"),
-        "yes_bid": _f(raw.get("yes_bid_dollars")),
-        "yes_ask": _f(raw.get("yes_ask_dollars")),
-        "no_bid": _f(raw.get("no_bid_dollars")),
-        "no_ask": _f(raw.get("no_ask_dollars")),
+        "yes_bid": yes_bid,
+        "yes_ask": yes_ask,
+        "no_bid": no_bid,
+        "no_ask": no_ask,
         "last_price": last,
         "previous_price": prev,
         "price_change_24h": change,
@@ -584,6 +670,7 @@ async def _build_tape_payload(
     excluded_by_category = 0
     excluded_unknown_market = 0
     excluded_untradeable_market = 0
+    excluded_parlay_market = 0
     now_ts = datetime.now(timezone.utc).timestamp()
     kept_trades: list[dict] = []
     kept_tickers: set[str] = set()
@@ -595,6 +682,13 @@ async def _build_tape_payload(
         # links. (Usually stale/expired or sub-markets we can't fetch.)
         if not m or not m.get("title"):
             excluded_unknown_market += 1
+            continue
+        # Parlay products come before sports classification: many Kalshi parlays
+        # are sports-flavored but the real reason to drop is "not a single
+        # actionable market". Counting them separately keeps the sports number
+        # honest.
+        if _is_parlay_market(tkr, m):
+            excluded_parlay_market += 1
             continue
         if _is_sports_market(tkr, m):
             excluded_by_category += 1
@@ -767,6 +861,7 @@ async def _build_tape_payload(
             "excluded_by_category": excluded_by_category,
             "excluded_unknown_market": excluded_unknown_market,
             "excluded_untradeable_market": excluded_untradeable_market,
+            "excluded_parlay_market": excluded_parlay_market,
         },
         "top_markets": top_markets,
         "filter_version": INSIDER_FILTER_VERSION,

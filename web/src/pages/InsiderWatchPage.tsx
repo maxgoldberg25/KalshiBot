@@ -89,9 +89,12 @@ const summaryStats = (s: TapeSummary | undefined) => {
       value: fmtNumber(
         (s?.excluded_sports ?? 0) +
           (s?.excluded_unknown_market ?? 0) +
-          (s?.excluded_untradeable_market ?? 0),
+          (s?.excluded_untradeable_market ?? 0) +
+          (s?.excluded_parlay_market ?? 0),
       ),
       sub: `${fmtNumber(s?.excluded_sports)} sports · ${fmtNumber(
+        s?.excluded_parlay_market,
+      )} parlays · ${fmtNumber(
         s?.excluded_unknown_market,
       )} unknown · ${fmtNumber(s?.excluded_untradeable_market)} not tradeable`,
     },

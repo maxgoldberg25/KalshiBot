@@ -102,6 +102,7 @@ export type TapeSummary = {
   excluded_by_category?: number
   excluded_unknown_market?: number
   excluded_untradeable_market?: number
+  excluded_parlay_market?: number
 }
 
 export type TopMarketRow = {
