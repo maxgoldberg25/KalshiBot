@@ -30,8 +30,8 @@ export const HowItWorks = () => (
   <section className="relative">
     <div className="mx-auto max-w-6xl px-4 py-24">
       <Reveal variant="up" className="mx-auto max-w-2xl text-center">
-        <SectionEyebrow>How it works</SectionEyebrow>
-        <h2 className="mt-4 text-balance text-3xl font-semibold tracking-tight md:text-4xl">
+        <SectionEyebrow>The loop</SectionEyebrow>
+        <h2 className="mt-4 text-balance font-display text-3xl font-bold uppercase tracking-tight md:text-5xl">
           A scanner that thinks like a <span className="text-gradient-emerald">market maker</span>.
         </h2>
         <p className="mt-3 text-sm text-muted-foreground md:text-base">
@@ -62,7 +62,9 @@ export const HowItWorks = () => (
                   Step {String(idx + 1).padStart(2, "0")}
                 </span>
               </div>
-              <h3 className="relative mt-5 text-lg font-semibold tracking-tight">{step.title}</h3>
+              <h3 className="relative mt-5 font-display text-lg font-semibold uppercase tracking-tight">
+                {step.title}
+              </h3>
               <p className="relative mt-2 text-sm leading-relaxed text-muted-foreground">
                 {step.body}
               </p>

@@ -59,9 +59,9 @@ export const FeatureGrid = () => (
   <section className="relative">
     <div className="mx-auto max-w-6xl px-4 py-24">
       <Reveal variant="up" className="mx-auto max-w-2xl text-center">
-        <SectionEyebrow>What's inside</SectionEyebrow>
-        <h2 className="mt-4 text-balance text-3xl font-semibold tracking-tight md:text-4xl">
-          Everything an edge-hunter needs, in one tab.
+        <SectionEyebrow>Inside the kit</SectionEyebrow>
+        <h2 className="mt-4 text-balance font-display text-3xl font-bold uppercase tracking-tight md:text-5xl">
+          Everything an <span className="text-gradient-emerald">edge-hunter</span> needs, in one tab.
         </h2>
         <p className="mt-3 text-sm text-muted-foreground md:text-base">
           Built for traders who want institutional tooling without an institutional stack.
@@ -85,7 +85,9 @@ export const FeatureGrid = () => (
                 <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/25">
                   <Icon className="size-4" aria-hidden />
                 </div>
-                <h3 className="mt-4 text-base font-semibold tracking-tight">{feature.title}</h3>
+                <h3 className="mt-4 font-display text-base font-semibold uppercase tracking-tight">
+                  {feature.title}
+                </h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                   {feature.body}
                 </p>

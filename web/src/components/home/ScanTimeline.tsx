@@ -45,9 +45,9 @@ export const ScanTimeline = () => (
   <section className="relative">
     <div className="mx-auto max-w-5xl px-4 py-24">
       <Reveal variant="up" className="mx-auto max-w-2xl text-center">
-        <SectionEyebrow>Inside one scan cycle</SectionEyebrow>
-        <h2 className="mt-4 text-balance text-3xl font-semibold tracking-tight md:text-4xl">
-          From quote to ticket in under a third of a second.
+        <SectionEyebrow>One scan cycle</SectionEyebrow>
+        <h2 className="mt-4 text-balance font-display text-3xl font-bold uppercase tracking-tight md:text-5xl">
+          From quote to ticket in under <span className="text-gradient-emerald">a third of a second.</span>
         </h2>
         <p className="mt-3 text-sm text-muted-foreground md:text-base">
           A look at what runs every 30 seconds (and what you don't have to think about).
@@ -72,10 +72,10 @@ export const ScanTimeline = () => (
                 <span className="size-2 animate-pulse-glow rounded-full bg-primary" />
               </span>
               <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
-                <span className="font-mono text-[0.65rem] uppercase tracking-widest text-muted-foreground">
+                <span className="font-mono text-[0.65rem] uppercase tracking-[0.28em] text-muted-foreground">
                   {stage.time}
                 </span>
-                <h3 className="flex items-center gap-2 text-base font-semibold tracking-tight">
+                <h3 className="flex items-center gap-2 font-display text-base font-semibold uppercase tracking-tight">
                   <Icon className="size-4 text-primary" aria-hidden />
                   {stage.title}
                 </h3>

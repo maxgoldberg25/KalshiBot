@@ -13,7 +13,9 @@ import { FeatureGrid } from "@/components/home/FeatureGrid"
 import { HowItWorks } from "@/components/home/HowItWorks"
 import { LeagueMarquee } from "@/components/home/LeagueMarquee"
 import { MetricsBand } from "@/components/home/MetricsBand"
+import { PillarTriad } from "@/components/home/PillarTriad"
 import { ScanTimeline } from "@/components/home/ScanTimeline"
+import { WhyItLands } from "@/components/home/WhyItLands"
 import { useAuth } from "@/context/AuthContext"
 import { fmtTime, fmtUptime } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -99,7 +101,7 @@ export function HomePage() {
         <div className="grid min-w-0 gap-3 lg:grid-cols-5">
           <Card className="min-w-0 lg:col-span-3">
             <CardHeader className="pb-2 pt-4">
-              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <CardTitle className="font-display text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
                 System health
               </CardTitle>
             </CardHeader>
@@ -144,7 +146,7 @@ export function HomePage() {
 
           <Card className={cn("min-w-0 lg:col-span-2", !isAuthed && "opacity-60")}>
             <CardHeader className="space-y-0 pb-2 pt-4">
-              <CardTitle className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <CardTitle className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1 font-display text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
                 <span className="shrink-0">Scan status</span>
                 {!loading && d?.active_odds_provider ? (
                   <span
@@ -203,7 +205,7 @@ export function HomePage() {
           <div className="space-y-3 border-t border-border/40 pt-5">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <p className="font-display text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
                   Scan analytics
                 </p>
                 <p className="mt-1 max-w-xl text-[0.7rem] leading-relaxed text-muted-foreground">
@@ -225,9 +227,11 @@ export function HomePage() {
 
       <LeagueMarquee />
 
+      <PillarTriad />
       <HowItWorks />
       <EdgeShowcase />
       <MetricsBand />
+      <WhyItLands />
       <FeatureGrid />
       <ScanTimeline />
 

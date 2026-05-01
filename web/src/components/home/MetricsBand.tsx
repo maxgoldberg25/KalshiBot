@@ -30,8 +30,8 @@ export const MetricsBand = () => (
 
     <div className="mx-auto max-w-6xl px-4 py-24">
       <Reveal variant="up" className="mx-auto max-w-2xl text-center">
-        <SectionEyebrow>By the numbers</SectionEyebrow>
-        <h2 className="mt-4 text-balance text-3xl font-semibold tracking-tight md:text-4xl">
+        <SectionEyebrow>The tape</SectionEyebrow>
+        <h2 className="mt-4 text-balance font-display text-3xl font-bold uppercase tracking-tight md:text-5xl">
           Built for <span className="text-gradient-emerald">throughput</span>, tuned for trust.
         </h2>
       </Reveal>
@@ -44,7 +44,7 @@ export const MetricsBand = () => (
                 aria-hidden
                 className="pointer-events-none absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"
               />
-              <div className="text-3xl font-semibold tracking-tight tabular-nums md:text-4xl">
+              <div className="font-display text-3xl font-bold tracking-tight tabular-nums md:text-5xl">
                 <RevealStat
                   value={m.value}
                   prefix={m.prefix}
@@ -53,7 +53,7 @@ export const MetricsBand = () => (
                   className="text-gradient-emerald"
                 />
               </div>
-              <div className="mt-2 text-[0.7rem] font-medium uppercase tracking-widest text-muted-foreground">
+              <div className="mt-2 font-display text-[0.7rem] font-medium uppercase tracking-[0.28em] text-muted-foreground">
                 {m.label}
               </div>
             </div>

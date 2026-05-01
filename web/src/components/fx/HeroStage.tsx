@@ -2,8 +2,8 @@ import {
   Activity,
   BarChart3,
   ChevronDown,
+  Flame,
   ShieldAlert,
-  Sparkles,
   TrendingUp,
   Wallet,
   Zap,
@@ -46,13 +46,13 @@ const StatPill = ({
   accent?: "positive" | "negative"
 }) => (
   <div className="group relative flex min-w-0 w-full flex-col rounded-xl border border-border/60 bg-card/50 px-3 py-3 backdrop-blur-sm transition-colors hover:border-primary/40 sm:px-4">
-    <span className="mb-1 flex items-center gap-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+    <span className="mb-1 flex items-center gap-1.5 font-display text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
       {icon}
       {label}
     </span>
     <span
       className={cn(
-        "text-2xl font-bold tabular-nums tracking-tight",
+        "font-display text-2xl font-bold tabular-nums tracking-tight",
         accent === "positive" && "text-emerald-400",
         accent === "negative" && "text-rose-400",
       )}
@@ -96,14 +96,14 @@ export const HeroStage = ({
       <div className="relative mx-auto grid max-w-6xl gap-10 px-4 pb-12 pt-14 lg:grid-cols-[1.1fr_1fr] lg:pt-16">
         <div className="relative z-10 flex min-w-0 flex-col gap-6 animate-fade-up">
           <div className="flex flex-wrap items-center gap-2 gap-y-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-primary">
-              <Sparkles className="size-3" aria-hidden />
-              Real-time arbitrage engine
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 font-display text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-primary">
+              <Flame className="size-3" aria-hidden />
+              Edge-hunting arena
             </span>
             {!!status && (
               <Badge
                 className={cn(
-                  "rounded-full border-0 px-2.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-[0.18em]",
+                  "rounded-full border-0 px-2.5 py-0.5 font-display text-[0.6rem] font-semibold uppercase tracking-[0.22em]",
                   healthy
                     ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30"
                     : "bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/30",
@@ -115,15 +115,16 @@ export const HeroStage = ({
           </div>
 
           <div className="space-y-3">
-            <h1 className="text-balance text-5xl font-extrabold leading-[1.05] tracking-tight text-foreground sm:text-6xl">
-              Turn prediction markets into{" "}
-              <span className="bg-gradient-to-br from-emerald-300 via-primary to-teal-500 bg-clip-text text-transparent">
-                a trading desk.
+            <h1 className="font-display text-balance text-5xl font-bold uppercase leading-[1.02] tracking-tight text-foreground sm:text-6xl lg:text-[4.25rem]">
+              Beat the book.
+              <br />
+              <span className="bg-gradient-to-br from-emerald-300 via-primary to-teal-400 bg-clip-text text-transparent text-glow-emerald animate-glow-pulse">
+                Bank the edge.
               </span>
             </h1>
             <p className="max-w-xl text-balance text-base leading-relaxed text-muted-foreground">
-              KalshiInsider continuously maps Kalshi contracts to live sportsbook lines, detects
-              mispricings with slippage-aware math, and surfaces the edge before it disappears.
+              Live market data, slippage-aware math, and one-click tickets in a single pit. KalshiInsider
+              scores every mispricing in basis points so the edge you see is the edge you can actually run.
             </p>
           </div>
 
@@ -153,17 +154,21 @@ export const HeroStage = ({
           </div>
 
           <div className="flex flex-wrap gap-2.5">
-            <Button asChild size="lg" className="gap-2 shadow-lg shadow-primary/20">
+            <Button
+              asChild
+              size="lg"
+              className="gap-2 font-display uppercase tracking-wider shadow-lg shadow-primary/25"
+            >
               <NavLink to="/insider">
                 <ShieldAlert className="size-4" aria-hidden />
-                Open Insider watch
+                Open the pit
               </NavLink>
             </Button>
             {onScan ? (
               <Button
                 size="lg"
                 variant="ghost"
-                className="gap-2"
+                className="gap-2 font-display uppercase tracking-wider"
                 onClick={onScan}
                 disabled={scanning}
                 aria-busy={scanning}
@@ -214,26 +219,26 @@ export const HeroStage = ({
             <LiveEdgeChart liveOpps={liveOpps} />
             <div className="relative mt-4 grid grid-cols-3 gap-2 border-t border-border/50 pt-4 text-center sm:gap-3 [&>*]:min-w-0">
               <div className="min-w-0">
-                <div className="text-[0.6rem] uppercase tracking-widest text-muted-foreground">
+                <div className="font-display text-[0.6rem] uppercase tracking-[0.22em] text-muted-foreground">
                   Avg latency
                 </div>
-                <div className="mt-0.5 text-sm font-semibold tabular-nums">
+                <div className="mt-0.5 font-display text-sm font-semibold tabular-nums">
                   <CountUp value={142} suffix="ms" />
                 </div>
               </div>
               <div className="min-w-0">
-                <div className="text-[0.6rem] uppercase tracking-widest text-muted-foreground">
+                <div className="font-display text-[0.6rem] uppercase tracking-[0.22em] text-muted-foreground">
                   Markets
                 </div>
-                <div className="mt-0.5 text-sm font-semibold tabular-nums">
+                <div className="mt-0.5 font-display text-sm font-semibold tabular-nums">
                   <CountUp value={mappedMarkets} />
                 </div>
               </div>
               <div className="min-w-0">
-                <div className="text-[0.6rem] uppercase tracking-widest text-muted-foreground">
+                <div className="font-display text-[0.6rem] uppercase tracking-[0.22em] text-muted-foreground">
                   Cycles
                 </div>
-                <div className="mt-0.5 text-sm font-semibold tabular-nums">
+                <div className="mt-0.5 font-display text-sm font-semibold tabular-nums">
                   <CountUp value={totalScans} />
                 </div>
               </div>
@@ -248,8 +253,11 @@ export const HeroStage = ({
 
         <div className="pointer-events-none col-span-full flex flex-col items-center gap-1 pb-3 pt-8 text-muted-foreground sm:pt-10">
           <span className="sr-only">More on this page below.</span>
-          <span className="font-mono text-[0.6rem] uppercase tracking-[0.3em]" aria-hidden>
-            scroll
+          <span
+            className="font-display text-[0.6rem] uppercase tracking-[0.35em]"
+            aria-hidden
+          >
+            Enter the pit
           </span>
           <ChevronDown className="size-4 animate-scroll-hint" aria-hidden />
         </div>

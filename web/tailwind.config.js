@@ -4,6 +4,31 @@ module.exports = {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: [
+          "Inter",
+          "ui-sans-serif",
+          "system-ui",
+          "-apple-system",
+          "Segoe UI",
+          "Roboto",
+          "sans-serif",
+        ],
+        display: [
+          "Chakra Petch",
+          "Inter",
+          "ui-sans-serif",
+          "system-ui",
+          "sans-serif",
+        ],
+        mono: [
+          "JetBrains Mono",
+          "ui-monospace",
+          "SFMono-Regular",
+          "Menlo",
+          "monospace",
+        ],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -94,6 +119,18 @@ module.exports = {
           "0%": { transform: "rotate(0deg)" },
           "100%": { transform: "rotate(360deg)" },
         },
+        scanline: {
+          "0%": { transform: "translateY(-100%)" },
+          "100%": { transform: "translateY(100vh)" },
+        },
+        "glow-pulse": {
+          "0%, 100%": { textShadow: "0 0 18px hsl(142 71% 55% / 0.35)" },
+          "50%": { textShadow: "0 0 28px hsl(142 71% 60% / 0.55)" },
+        },
+        "heat-shift": {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -109,6 +146,9 @@ module.exports = {
         "scroll-hint": "scroll-hint 1.8s ease-in-out infinite",
         "fill-bar": "fill-bar 1.4s cubic-bezier(0.22,1,0.36,1) both",
         "spin-slow": "spin-slow 28s linear infinite",
+        scanline: "scanline 6s linear infinite",
+        "glow-pulse": "glow-pulse 4.5s ease-in-out infinite",
+        "heat-shift": "heat-shift 8s ease-in-out infinite",
       },
     },
   },

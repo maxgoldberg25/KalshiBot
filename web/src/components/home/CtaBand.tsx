@@ -30,39 +30,53 @@ export const CtaBand = () => {
               className="pointer-events-none absolute -right-24 top-1/3 -z-10 size-[360px] rounded-full bg-sky-500/10 blur-3xl animate-float"
             />
 
-            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-widest text-primary">
+            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 font-display text-[0.7rem] font-semibold uppercase tracking-[0.32em] text-primary">
               <span className="size-1.5 animate-pulse-glow rounded-full bg-primary" />
-              Live now
+              Start your run
             </div>
 
-            <h2 className="mt-5 text-balance text-4xl font-semibold tracking-tight md:text-5xl">
-              Trade the spread between{" "}
-              <span className="text-gradient-emerald">truth and price.</span>
+            <h2 className="mt-5 text-balance font-display text-4xl font-bold uppercase tracking-tight md:text-6xl">
+              Hunt the spread.
+              <br />
+              <span className="text-gradient-emerald text-glow-emerald animate-glow-pulse">
+                Bank the edge.
+              </span>
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-sm text-muted-foreground md:text-base">
-              The scanner is already running. Sign in to see what it's catching right now.
+            <p className="mx-auto mt-5 max-w-xl text-sm text-muted-foreground md:text-base">
+              The scanner is already running. Step into the pit and see what it's catching right now.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               {isAuthed ? (
-                <>
-                  <Button asChild size="lg" className="gap-2 shadow-lg shadow-primary/20">
-                    <NavLink to="/insider">
-                      <ShieldCheck className="size-4" aria-hidden />
-                      Open Insider watch
-                      <ArrowRight className="size-4" aria-hidden />
-                    </NavLink>
-                  </Button>
-                </>
+                <Button
+                  asChild
+                  size="lg"
+                  className="gap-2 font-display uppercase tracking-wider shadow-lg shadow-primary/25"
+                >
+                  <NavLink to="/insider">
+                    <ShieldCheck className="size-4" aria-hidden />
+                    Open the pit
+                    <ArrowRight className="size-4" aria-hidden />
+                  </NavLink>
+                </Button>
               ) : (
                 <>
-                  <Button asChild size="lg" className="gap-2 shadow-lg shadow-primary/20">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="gap-2 font-display uppercase tracking-wider shadow-lg shadow-primary/25"
+                  >
                     <NavLink to="/login">
-                      Create your account
+                      Claim your seat
                       <ArrowRight className="size-4" aria-hidden />
                     </NavLink>
                   </Button>
-                  <Button asChild size="lg" variant="outline" className="gap-2">
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="outline"
+                    className="gap-2 font-display uppercase tracking-wider"
+                  >
                     <NavLink to="/login">
                       <ShieldCheck className="size-4" aria-hidden />
                       I already have one
@@ -72,8 +86,8 @@ export const CtaBand = () => {
               )}
             </div>
 
-            <p className="mt-6 text-[11px] text-muted-foreground">
-              Self-hosted · single-file SQLite · sessions never leave your machine.
+            <p className="mt-6 font-display text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
+              Self-hosted · Single-file SQLite · Sessions never leave your machine
             </p>
           </div>
         </Reveal>

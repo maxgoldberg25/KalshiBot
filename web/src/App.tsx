@@ -44,7 +44,9 @@ const AppShell = () => {
             <div className="flex h-6 w-6 items-center justify-center rounded bg-primary/15 ring-1 ring-primary/25">
               <TrendingUp className="h-3.5 w-3.5 text-primary" aria-hidden />
             </div>
-            <span className="text-sm font-semibold tracking-tight">KalshiInsider</span>
+            <span className="font-display text-sm font-bold uppercase tracking-[0.18em]">
+              KalshiInsider
+            </span>
           </NavLink>
 
           <nav className="flex items-center gap-0.5" aria-label="Main navigation">

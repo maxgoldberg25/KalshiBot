@@ -54,10 +54,10 @@ export const EdgeShowcase = () => (
       <div className="grid items-start gap-10 lg:grid-cols-12">
         <Reveal variant="left" className="lg:col-span-5">
           <SectionEyebrow icon={<Sparkles className="size-3" aria-hidden />}>
-            Live edge demo
+            Live market view
           </SectionEyebrow>
-          <h2 className="mt-4 text-balance text-3xl font-semibold tracking-tight md:text-4xl">
-            See the gap. Take the gap.
+          <h2 className="mt-4 text-balance font-display text-3xl font-bold uppercase tracking-tight md:text-5xl">
+            See the gap. <span className="text-gradient-emerald">Run the gap.</span>
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">
             Each row is a real-style opportunity. The blue bar is the sportsbook implied
