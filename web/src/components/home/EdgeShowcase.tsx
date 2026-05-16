@@ -6,25 +6,25 @@ import { SectionEyebrow } from "./SectionEyebrow"
 
 const ROWS = [
   {
-    market: "Knicks ML vs Heat",
-    side: "YES · 100",
-    kalshi: 62,
-    book: 68,
-    edgeBps: 612,
+    market: "Fed cuts in March",
+    side: "YES · $84K",
+    kalshi: 72,
+    book: 28,
+    edgeBps: 91,
   },
   {
-    market: "Fed cuts in March",
-    side: "YES · 250",
-    kalshi: 41,
-    book: 47,
-    edgeBps: 593,
+    market: "CPI above 0.3%",
+    side: "NO · $28K",
+    kalshi: 21,
+    book: 79,
+    edgeBps: 76,
   },
   {
     market: "BTC > 110k by Friday",
-    side: "NO · 150",
-    kalshi: 38,
-    book: 33,
-    edgeBps: 503,
+    side: "YES · $52K",
+    kalshi: 68,
+    book: 32,
+    edgeBps: 84,
   },
 ]
 
@@ -54,34 +54,34 @@ export const EdgeShowcase = () => (
       <div className="grid items-start gap-10 lg:grid-cols-12">
         <Reveal variant="left" className="lg:col-span-5">
           <SectionEyebrow icon={<Sparkles className="size-3" aria-hidden />}>
-            Live market view
+            Insider watch view
           </SectionEyebrow>
           <h2 className="mt-4 text-balance font-display text-3xl font-bold uppercase tracking-tight md:text-5xl">
-            See the gap. <span className="text-gradient-emerald">Run the gap.</span>
+            See the print. <span className="text-gradient-emerald">Read the intent.</span>
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">
-            Each row is a real-style opportunity. The blue bar is the sportsbook implied
-            probability, the green bar is Kalshi, and the chip is the Kelly-sized order ready to
-            fire.
+            Each row compresses the same facts a discretionary trader would check:
+            who hit size, which side they took, how much notional cleared, and how
+            one-sided the market flow has become.
           </p>
           <ul className="mt-6 space-y-3 text-sm text-muted-foreground">
             <li className="flex items-start gap-3">
               <span className="mt-1 inline-flex size-5 items-center justify-center rounded-md bg-primary/15 text-primary ring-1 ring-primary/25">
                 <Zap className="size-3" aria-hidden />
               </span>
-              Sub-second refresh. Stale quotes are flagged, never executed.
+              Month-long lookback by default, refreshed continuously for fresh prints.
             </li>
             <li className="flex items-start gap-3">
               <span className="mt-1 inline-flex size-5 items-center justify-center rounded-md bg-primary/15 text-primary ring-1 ring-primary/25">
                 <ArrowUpRight className="size-3" aria-hidden />
               </span>
-              Edge in basis points already nets out execution friction and slippage.
+              Conviction score blends size, imbalance, concentration, OI share, and recency.
             </li>
             <li className="flex items-start gap-3">
               <span className="mt-1 inline-flex size-5 items-center justify-center rounded-md bg-primary/15 text-primary ring-1 ring-primary/25">
                 <ArrowDownRight className="size-3" aria-hidden />
               </span>
-              Position sizing follows fractional-Kelly with hard notional caps.
+              One tap opens the live Kalshi market on the exact side you are tracking.
             </li>
           </ul>
         </Reveal>
@@ -97,18 +97,18 @@ export const EdgeShowcase = () => (
                 <div className="flex items-center gap-2">
                   <span className="size-2 animate-pulse-glow rounded-full bg-emerald-400" />
                   <span className="font-mono text-[0.65rem] uppercase tracking-widest text-muted-foreground">
-                    scanner / live
+                    insider watch / live
                   </span>
                 </div>
                 <span className="font-mono text-[0.65rem] text-muted-foreground/70">
-                  refreshed 1s ago
+                  last 30 days
                 </span>
               </div>
 
               <div className="grid grid-cols-12 gap-3 border-b border-border/40 px-5 py-2 text-[0.62rem] uppercase tracking-widest text-muted-foreground/70">
                 <div className="col-span-5">Market</div>
-                <div className="col-span-5">Kalshi vs Book</div>
-                <div className="col-span-2 text-right">Edge</div>
+                <div className="col-span-5">Flow balance</div>
+                <div className="col-span-2 text-right">Score</div>
               </div>
 
               <ul className="divide-y divide-border/40">
@@ -126,7 +126,7 @@ export const EdgeShowcase = () => (
                     <div className="col-span-5 space-y-2">
                       <div className="flex items-center gap-2">
                         <span className="w-12 shrink-0 font-mono text-[0.65rem] text-emerald-400">
-                          K {r.kalshi}¢
+                          YES {r.kalshi}%
                         </span>
                         <ProbBar
                           value={r.kalshi}
@@ -136,7 +136,7 @@ export const EdgeShowcase = () => (
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="w-12 shrink-0 font-mono text-[0.65rem] text-sky-400">
-                          B {r.book}¢
+                          NO {r.book}%
                         </span>
                         <ProbBar
                           value={r.book}
@@ -148,7 +148,7 @@ export const EdgeShowcase = () => (
                     <div className="col-span-2 text-right">
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 font-mono text-[0.7rem] font-semibold text-emerald-300 ring-1 ring-emerald-500/30">
                         <ArrowUpRight className="size-3" aria-hidden />
-                        {r.edgeBps} bps
+                        {r.edgeBps}
                       </span>
                     </div>
                   </li>
@@ -156,8 +156,8 @@ export const EdgeShowcase = () => (
               </ul>
 
               <div className="flex items-center justify-between border-t border-border/60 bg-card/40 px-5 py-3 text-[0.7rem] text-muted-foreground">
-                <span>3 active opportunities · auto-refresh 30s</span>
-                <span className="font-mono text-emerald-400">+$1,284 expected EV</span>
+                <span>3 insider signals · sports and parlays excluded</span>
+                <span className="font-mono text-emerald-400">$164K notional flagged</span>
               </div>
             </div>
           </div>

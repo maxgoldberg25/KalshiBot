@@ -6,38 +6,38 @@ const STAGES = [
   {
     icon: Radar,
     time: "t = 0 ms",
-    title: "Pull tape",
-    body: "Public Kalshi tape + sportsbook quotes ingested in parallel.",
+    title: "Pull month tape",
+    body: "Public Kalshi trades are requested from the last 30 days.",
   },
   {
     icon: Shuffle,
     time: "t = 80 ms",
-    title: "Auto-map",
-    body: "Fuzzy matcher links contracts to bookmaker selections by score.",
+    title: "Drop noise",
+    body: "Sports, synthetic parlays, stale markets, and broken links are filtered out.",
   },
   {
     icon: Cpu,
     time: "t = 140 ms",
-    title: "Price the edge",
-    body: "Convert to true probabilities, net out friction, compute bps.",
+    title: "Score conviction",
+    body: "Large trades are scored by size, imbalance, open-interest share, and concentration.",
   },
   {
     icon: Database,
     time: "t = 220 ms",
-    title: "Persist",
-    body: "Alerts upserted with dedupe; sessions and positions stored locally.",
+    title: "Aggregate markets",
+    body: "Multiple prints roll up into one card with total notional and side balance.",
   },
   {
     icon: Send,
     time: "t = 300 ms",
-    title: "Notify",
-    body: "Insider watch + scanner views update; toast pings on new opps.",
+    title: "Surface leads",
+    body: "Insider watch refreshes with the highest-conviction markets first.",
   },
   {
     icon: CheckCircle2,
     time: "t = 320 ms",
-    title: "Ready to execute",
-    body: "Kelly-sized order suggested. One click sends; dry-run by default.",
+    title: "Open Kalshi",
+    body: "YES and NO buttons take you straight to the live market.",
   },
 ] as const
 
@@ -45,12 +45,12 @@ export const ScanTimeline = () => (
   <section className="relative">
     <div className="mx-auto max-w-5xl px-4 py-24">
       <Reveal variant="up" className="mx-auto max-w-2xl text-center">
-        <SectionEyebrow>One scan cycle</SectionEyebrow>
+        <SectionEyebrow>One tape cycle</SectionEyebrow>
         <h2 className="mt-4 text-balance font-display text-3xl font-bold uppercase tracking-tight md:text-5xl">
-          From quote to ticket in under <span className="text-gradient-emerald">a third of a second.</span>
+          From month of tape to <span className="text-gradient-emerald">ranked insider leads.</span>
         </h2>
         <p className="mt-3 text-sm text-muted-foreground md:text-base">
-          A look at what runs every 30 seconds (and what you don't have to think about).
+          A look at what runs every refresh so the feed stays focused on actionable large trades.
         </p>
       </Reveal>
 

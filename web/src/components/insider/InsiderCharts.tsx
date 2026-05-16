@@ -823,7 +823,7 @@ export const InsiderCharts = ({ rows, topMarkets, loading }: InsiderChartsProps)
         >
           <div className="h-[260px]">
             {loading || !hasPareto ? (
-              <EmptyChart label={loading ? "Loading…" : "No markets in sample"} />
+              <EmptyChart label={loading ? "Loading…" : "No markets in window"} />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart

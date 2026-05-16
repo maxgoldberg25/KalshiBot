@@ -528,40 +528,36 @@ async def _hydrate_market_meta(
 
 async def _pull_tape_paginated(
     kalshi: KalshiAdapter,
-    target_nonsports: int,
     *,
+    min_ts: Optional[int] = None,
     page_size: int = 1000,
-    max_pages: int = 25,
-    max_raw: int = 25_000,
+    max_pages: int = 100,
+    max_raw: int = 100_000,
 ) -> list[dict]:
-    """Page through Kalshi's public trade tape until we have enough non-sports trades.
+    """Page through Kalshi's public trade tape for a bounded timestamp window.
 
     Kalshi's tape is heavily dominated by sports (often 70–90% of volume), so a
-    single 1 000-row pull frequently leaves only a few dozen insider-eligible
+    single 1 000-row pull frequently leaves only a few dozen insider-eligible large
     trades after filtering. We walk the cursor until one of these is true:
 
-      - `target_nonsports` trades with a non-sports ticker prefix have been seen
+      - Kalshi returns an empty cursor (end of timestamp-filtered tape)
       - `max_pages` pages have been fetched (safety rail)
       - `max_raw` total raw rows have been fetched (safety rail)
-      - Kalshi returns an empty cursor (end of tape)
     """
     raw: list[dict] = []
     cursor: Optional[str] = None
-    nonsports_seen = 0
-    target_nonsports = max(50, int(target_nonsports))
     page_size = max(50, min(int(page_size), 1000))
     for _ in range(max_pages):
-        data = await kalshi.list_market_trades(limit=page_size, cursor=cursor)
+        data = await kalshi.list_market_trades(
+            limit=page_size,
+            cursor=cursor,
+            min_ts=min_ts,
+        )
         trades = list(data.get("trades") or [])
         if not trades:
             break
         raw.extend(trades)
-        for t in trades:
-            if not _is_sports_by_ticker(t.get("ticker")):
-                nonsports_seen += 1
         cursor = data.get("cursor")
-        if nonsports_seen >= target_nonsports:
-            break
         if len(raw) >= max_raw:
             break
         if not cursor:
@@ -1380,19 +1376,24 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
     @app.get("/api/trades/watch")
     async def api_trades_watch(
         min_notional: float = 250.0,
-        fetch_limit: int = 500,
+        lookback_days: int = 30,
+        fetch_limit: Optional[int] = None,
         user: dict = Depends(require_user),
     ) -> dict:
         _ = user
         """
-        Recent public Kalshi tape filtered to larger prints (surveillance-style feed).
+        Public Kalshi tape filtered to larger prints (surveillance-style feed).
 
-        `fetch_limit` is the *target* number of non-sports trades to accumulate;
-        the backend pages through Kalshi's trade tape (max 10 pages × 1 000 rows)
-        until it hits this target or exhausts the recent window.
+        `lookback_days` controls the timestamp window. The backend asks Kalshi for
+        trades no older than that cutoff and walks the cursor until the window is
+        exhausted or a safety cap is reached.
         """
         s = get_settings()
-        now_iso = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(timezone.utc)
+        now_iso = now.isoformat()
+        lookback_days = max(1, min(int(lookback_days), 31))
+        window_start = now - timedelta(days=lookback_days)
+        min_ts = int(window_start.timestamp())
         if not s.kalshi_configured:
             return {
                 "ok": False,
@@ -1401,16 +1402,22 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
                 "kalshi_configured": False,
                 "fetched_at": now_iso,
                 "min_notional": min_notional,
+                "lookback_days": lookback_days,
+                "window_start": window_start.isoformat(),
             }
-        fetch_limit = max(100, min(int(fetch_limit), 20_000))
+        raw_cap = (
+            100_000
+            if fetch_limit is None
+            else max(25_000, min(int(fetch_limit), 100_000))
+        )
         floor = max(0.0, float(min_notional))
         try:
             if _persistent_kalshi is not None:
-                raw = await _pull_tape_paginated(_persistent_kalshi, fetch_limit)
+                raw = await _pull_tape_paginated(_persistent_kalshi, min_ts=min_ts, max_raw=raw_cap)
                 payload = await _build_tape_payload(_persistent_kalshi, raw, floor)
             else:
                 async with kalshi_adapter_from_settings(s) as k:
-                    raw = await _pull_tape_paginated(k, fetch_limit)
+                    raw = await _pull_tape_paginated(k, min_ts=min_ts, max_raw=raw_cap)
                     payload = await _build_tape_payload(k, raw, floor)
             return {
                 "ok": True,
@@ -1418,7 +1425,9 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
                 "raw_count": len(raw),
                 "fetched_at": now_iso,
                 "min_notional": floor,
-                "fetch_limit": fetch_limit,
+                "fetch_limit": raw_cap,
+                "lookback_days": lookback_days,
+                "window_start": window_start.isoformat(),
                 **payload,
             }
         except Exception as e:
@@ -1429,6 +1438,8 @@ def create_app(settings_override: Optional[Settings] = None) -> FastAPI:
                 "kalshi_configured": True,
                 "fetched_at": now_iso,
                 "min_notional": floor,
+                "lookback_days": lookback_days,
+                "window_start": window_start.isoformat(),
             }
 
     # ── Auth ────────────────────────────────────────────────────────────

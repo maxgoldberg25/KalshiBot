@@ -21,9 +21,9 @@ import { cn } from "@/lib/utils"
 // markets and $10k+ on liquid ones; whales show up at $50k+. Defaults are
 // calibrated to surface actionable signal, not volume.
 const MIN_NOTIONAL_OPTIONS = [500, 1000, 2500, 5000, 10000, 25000, 50000] as const
-const FETCH_LIMIT_OPTIONS = [1000, 2500, 5000, 10000, 20000] as const
-const DEFAULT_MIN_NOTIONAL = 1000
-const DEFAULT_FETCH_LIMIT = 5000
+const LOOKBACK_DAY_OPTIONS = [1, 7, 14, 30] as const
+const DEFAULT_MIN_NOTIONAL = 2500
+const DEFAULT_LOOKBACK_DAYS = 30
 
 const fmtUsd = (n: number | null | undefined, fractionDigits = 2) => {
   if (n === null || n === undefined || Number.isNaN(n)) return "—"
@@ -170,13 +170,13 @@ const applySort = (rows: MarketAggRow[], mode: SortMode): MarketAggRow[] => {
 export function InsiderWatchPage() {
   const qc = useQueryClient()
   const [minNotional, setMinNotional] = useState<number>(DEFAULT_MIN_NOTIONAL)
-  const [fetchLimit, setFetchLimit] = useState<number>(DEFAULT_FETCH_LIMIT)
+  const [lookbackDays, setLookbackDays] = useState<number>(DEFAULT_LOOKBACK_DAYS)
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("all")
   const [sortMode, setSortMode] = useState<SortMode>("conviction")
 
   const q = useQuery({
-    queryKey: ["trades-watch", minNotional, fetchLimit],
-    queryFn: () => fetchTradesWatch(minNotional, fetchLimit),
+    queryKey: ["trades-watch", minNotional, lookbackDays],
+    queryFn: () => fetchTradesWatch(minNotional, lookbackDays),
     refetchInterval: 30_000,
   })
 
@@ -188,8 +188,8 @@ export function InsiderWatchPage() {
     setMinNotional(Number(e.target.value))
   }
 
-  const handleFetchLimitChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    setFetchLimit(Number(e.target.value))
+  const handleLookbackDaysChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    setLookbackDays(Number(e.target.value))
   }
 
   const d = q.data
@@ -223,7 +223,8 @@ export function InsiderWatchPage() {
             exist — politics, economics, regulatory, corporate events, crypto,
             and climate. Ranked by a 0-100 conviction score combining print
             size, directional imbalance, share of open interest, concentration
-            and recency. Sports games are excluded.
+            and recency. Sports and synthetic parlays are excluded; the default
+            view scans large trades from the last 30 days.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -243,16 +244,16 @@ export function InsiderWatchPage() {
             </select>
           </label>
           <label className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="whitespace-nowrap">Window</span>
+            <span className="whitespace-nowrap">Lookback</span>
             <select
-              value={fetchLimit}
-              onChange={handleFetchLimitChange}
+              value={lookbackDays}
+              onChange={handleLookbackDaysChange}
               className="h-9 rounded-md border border-border bg-background px-2 text-xs text-foreground"
-              aria-label="Target number of non-sports trades to accumulate"
+              aria-label="Trade lookback window in days"
             >
-              {FETCH_LIMIT_OPTIONS.map((n) => (
+              {LOOKBACK_DAY_OPTIONS.map((n) => (
                 <option key={n} value={n}>
-                  ~{n.toLocaleString()} trades
+                  Last {n === 1 ? "24 hours" : `${n} days`}
                 </option>
               ))}
             </select>
@@ -319,7 +320,8 @@ export function InsiderWatchPage() {
               : loading
               ? "Loading…"
               : "—"}
-            {d?.raw_count != null ? ` · ${d.raw_count} raw rows sampled` : ""}
+            {d?.lookback_days ? ` · last ${d.lookback_days}d` : ""}
+            {d?.raw_count != null ? ` · ${d.raw_count} raw rows scanned` : ""}
             {d?.filter_version ? ` · ${d.filter_version}` : ""}
           </span>
         </div>
@@ -396,8 +398,8 @@ export function InsiderWatchPage() {
         ) : markets.length === 0 ? (
           <Card className="border-border/60">
             <CardContent className="py-10 text-center text-sm text-muted-foreground">
-              No non-sports markets above this notional in the sample. Lower
-              the minimum or increase the window.
+              No non-sports markets above this notional in the selected lookback.
+              Lower the minimum or expand the window.
             </CardContent>
           </Card>
         ) : visibleMarkets.length === 0 ? (

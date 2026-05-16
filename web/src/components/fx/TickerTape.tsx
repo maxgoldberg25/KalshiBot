@@ -8,18 +8,18 @@ export type TickerItem = {
 }
 
 const FAKE_TICKERS: TickerItem[] = [
-  { label: "KXNBAGAME · LAL/BOS", price: 0.62, change: 0.03 },
   { label: "KXPRES-24 · D", price: 0.48, change: -0.02 },
   { label: "KXFED-JAN · 25bp", price: 0.71, change: 0.01 },
-  { label: "KXMLBGAME · NYY/HOU", price: 0.55, change: 0.04 },
-  { label: "KXNFLGAME · KC/BUF", price: 0.66, change: -0.05 },
   { label: "KXCPI-MAR · >0.3%", price: 0.31, change: 0.02 },
   { label: "KXUSRECESSION", price: 0.22, change: -0.01 },
-  { label: "KXSB-LIX · AFC", price: 0.58, change: 0.02 },
-  { label: "KXNCAABGAME · DUKE", price: 0.74, change: 0.03 },
-  { label: "KXNHLGAME · TBL/FLA", price: 0.49, change: -0.02 },
   { label: "KXBTCPRICE · >100K", price: 0.41, change: 0.06 },
   { label: "KXOSCAR · BEST PIC", price: 0.33, change: -0.03 },
+  { label: "KXRATECUT · MARCH", price: 0.56, change: 0.04 },
+  { label: "KXCLIMATE · HOTTEST", price: 0.64, change: 0.02 },
+  { label: "KXSCOTUS · RULING", price: 0.37, change: -0.04 },
+  { label: "KXBTCETF · INFLOW", price: 0.52, change: 0.05 },
+  { label: "KXGOVSHUT · DEC", price: 0.28, change: -0.01 },
+  { label: "KXREGULATE · APPROVAL", price: 0.44, change: 0.03 },
 ]
 
 const TapeRow = ({ items, ariaHidden }: { items: TickerItem[]; ariaHidden?: boolean }) => (

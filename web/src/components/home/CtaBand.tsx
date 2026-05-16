@@ -32,18 +32,19 @@ export const CtaBand = () => {
 
             <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 font-display text-[0.7rem] font-semibold uppercase tracking-[0.32em] text-primary">
               <span className="size-1.5 animate-pulse-glow rounded-full bg-primary" />
-              Start your run
+              Start watching
             </div>
 
             <h2 className="mt-5 text-balance font-display text-4xl font-bold uppercase tracking-tight md:text-6xl">
-              Hunt the spread.
+              Follow the flow.
               <br />
               <span className="text-gradient-emerald text-glow-emerald animate-glow-pulse">
-                Bank the edge.
+                Catch the move.
               </span>
             </h2>
             <p className="mx-auto mt-5 max-w-xl text-sm text-muted-foreground md:text-base">
-              The scanner is already running. Step into the pit and see what it's catching right now.
+              Insider Watch is scanning the last month of large Kalshi prints.
+              Open the feed and see which markets are attracting serious size.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -55,7 +56,7 @@ export const CtaBand = () => {
                 >
                   <NavLink to="/insider">
                     <ShieldCheck className="size-4" aria-hidden />
-                    Open the pit
+                    Open insider watch
                     <ArrowRight className="size-4" aria-hidden />
                   </NavLink>
                 </Button>
@@ -87,7 +88,7 @@ export const CtaBand = () => {
             </div>
 
             <p className="mt-6 font-display text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
-              Self-hosted · Single-file SQLite · Sessions never leave your machine
+              30-day tape · Large-trade filter · Sessions never leave your machine
             </p>
           </div>
         </Reveal>

@@ -61,11 +61,11 @@ export async function postScan(): Promise<{ ok: boolean; alerts?: number; error?
 
 export async function fetchTradesWatch(
   minNotional: number,
-  fetchLimit: number,
+  lookbackDays: number,
 ): Promise<TradesWatchResponse> {
   const sp = new URLSearchParams({
     min_notional: String(minNotional),
-    fetch_limit: String(fetchLimit),
+    lookback_days: String(lookbackDays),
   })
   const r = await apiFetch(`/api/trades/watch?${sp}`, BASE_INIT)
   if (!r.ok) throw new Error(`trades watch ${r.status}`)

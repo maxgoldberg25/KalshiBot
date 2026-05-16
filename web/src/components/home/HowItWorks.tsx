@@ -5,23 +5,23 @@ import { SectionEyebrow } from "./SectionEyebrow"
 const STEPS = [
   {
     icon: <Radar className="size-5" aria-hidden />,
-    title: "Pull every market",
+    title: "Read the last month",
     body:
-      "Stream Kalshi event contracts and sportsbook lines side by side, normalized to true probabilities — no manual mapping required.",
+      "Pull public Kalshi trade tape across a 30-day window and keep only prints large enough to matter.",
     gradient: "from-emerald-400/20 to-teal-500/0",
   },
   {
     icon: <Scale className="size-5" aria-hidden />,
-    title: "Compare in basis points",
+    title: "Filter for insider signal",
     body:
-      "We weight by liquidity, stale-quote risk, and execution friction so the edge you see is the edge you can actually capture.",
+      "Drop sports and synthetic parlays, then score the remaining markets by notional, imbalance, OI share, and recency.",
     gradient: "from-sky-400/20 to-indigo-500/0",
   },
   {
     icon: <Zap className="size-5" aria-hidden />,
-    title: "Act before it closes",
+    title: "Open the market fast",
     body:
-      "Get an alert the moment an opportunity opens, with a Kelly-sized order ready to send and a one-click execution flow.",
+      "Tap the YES or NO side from the card and jump straight to the Kalshi market while the flow is still actionable.",
     gradient: "from-fuchsia-400/20 to-violet-500/0",
   },
 ]
@@ -30,13 +30,13 @@ export const HowItWorks = () => (
   <section className="relative">
     <div className="mx-auto max-w-6xl px-4 py-24">
       <Reveal variant="up" className="mx-auto max-w-2xl text-center">
-        <SectionEyebrow>The loop</SectionEyebrow>
+        <SectionEyebrow>The surveillance loop</SectionEyebrow>
         <h2 className="mt-4 text-balance font-display text-3xl font-bold uppercase tracking-tight md:text-5xl">
-          A scanner that thinks like a <span className="text-gradient-emerald">market maker</span>.
+          A scanner that thinks like a <span className="text-gradient-emerald">tape reader</span>.
         </h2>
         <p className="mt-3 text-sm text-muted-foreground md:text-base">
-          Three stages run on a 30-second loop. By the time the screen refreshes, the edge has been
-          priced, sized, and queued for execution.
+          Three stages keep the month-long tape searchable, ranked, and ready to act on without
+          burying you in retail prints.
         </p>
       </Reveal>
 
@@ -69,7 +69,7 @@ export const HowItWorks = () => (
                 {step.body}
               </p>
               <div className="relative mt-6 flex items-center gap-1.5 text-xs font-medium text-primary opacity-0 transition-opacity duration-500 group-hover:opacity-100">
-                Live in production
+                Watching now
                 <ArrowRight className="size-3.5" aria-hidden />
               </div>
             </div>

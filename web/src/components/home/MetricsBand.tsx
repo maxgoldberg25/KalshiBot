@@ -11,9 +11,9 @@ type Metric = {
 }
 
 const METRICS: Metric[] = [
-  { label: "Markets streamed", value: 5420, suffix: "+" },
-  { label: "Avg. scan latency", value: 320, suffix: " ms" },
-  { label: "Edges flagged / day", value: 184 },
+  { label: "Tape lookback", value: 30, suffix: " days" },
+  { label: "Large-trade floor", value: 2.5, prefix: "$", suffix: "K", decimals: 1 },
+  { label: "Whale threshold", value: 50, prefix: "$", suffix: "K" },
   { label: "Notional under watch", value: 12.6, prefix: "$", suffix: "M", decimals: 1 },
 ]
 
@@ -30,9 +30,9 @@ export const MetricsBand = () => (
 
     <div className="mx-auto max-w-6xl px-4 py-24">
       <Reveal variant="up" className="mx-auto max-w-2xl text-center">
-        <SectionEyebrow>The tape</SectionEyebrow>
+        <SectionEyebrow>The month-long tape</SectionEyebrow>
         <h2 className="mt-4 text-balance font-display text-3xl font-bold uppercase tracking-tight md:text-5xl">
-          Built for <span className="text-gradient-emerald">throughput</span>, tuned for trust.
+          Built for <span className="text-gradient-emerald">big prints</span>, tuned for signal.
         </h2>
       </Reveal>
 

@@ -160,6 +160,8 @@ export type TradesWatchResponse = {
   fetched_at?: string
   min_notional?: number
   fetch_limit?: number
+  lookback_days?: number
+  window_start?: string
   filter_version?: string
 }
 

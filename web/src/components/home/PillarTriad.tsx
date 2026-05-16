@@ -12,23 +12,23 @@ type Pillar = {
 
 const PILLARS: Pillar[] = [
   {
-    kicker: "Mode",
-    headline: "24/7",
-    body: "Tape ingest, auto-mapping, and edge detection that never feel asleep. The scanner runs while you sleep.",
+    kicker: "Scope",
+    headline: "30D",
+    body: "Large Kalshi prints stay under watch for a full month, not just the last burst of tape activity.",
     icon: <Radar className="size-4" aria-hidden />,
     tint: "from-emerald-400/25 to-emerald-500/0",
   },
   {
-    kicker: "Loop",
-    headline: "Live",
-    body: "Price context, probability deltas, and Kelly-sized tickets share one surface. No window-hopping, no stale quotes.",
+    kicker: "Signal",
+    headline: "Size",
+    body: "Whale and major orders are grouped by market with direction, concentration, and share-of-open-interest context.",
     icon: <Flame className="size-4" aria-hidden />,
     tint: "from-amber-400/25 to-rose-500/0",
   },
   {
     kicker: "Goal",
-    headline: "Edge",
-    body: "Every opportunity is scored in basis points after slippage. Close the spread between truth and price.",
+    headline: "Lead",
+    body: "Sports noise is filtered away so politics, economics, crypto, regulatory, and climate markets rise to the top.",
     icon: <Trophy className="size-4" aria-hidden />,
     tint: "from-sky-400/25 to-indigo-500/0",
   },

@@ -98,7 +98,7 @@ export const HeroStage = ({
           <div className="flex flex-wrap items-center gap-2 gap-y-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 font-display text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-primary">
               <Flame className="size-3" aria-hidden />
-              Edge-hunting arena
+              Insider-flow radar
             </span>
             {!!status && (
               <Badge
@@ -116,15 +116,16 @@ export const HeroStage = ({
 
           <div className="space-y-3">
             <h1 className="font-display text-balance text-5xl font-bold uppercase leading-[1.02] tracking-tight text-foreground sm:text-6xl lg:text-[4.25rem]">
-              Beat the book.
+              Track the tape.
               <br />
               <span className="bg-gradient-to-br from-emerald-300 via-primary to-teal-400 bg-clip-text text-transparent text-glow-emerald animate-glow-pulse">
-                Bank the edge.
+                Catch the insiders.
               </span>
             </h1>
             <p className="max-w-xl text-balance text-base leading-relaxed text-muted-foreground">
-              Live market data, slippage-aware math, and one-click tickets in a single pit. KalshiInsider
-              scores every mispricing in basis points so the edge you see is the edge you can actually run.
+              KalshiInsider watches the public trade tape for unusually large
+              non-sports orders, clusters them by market, and ranks the flow by
+              conviction so you can see where informed money is moving first.
             </p>
           </div>
 
@@ -161,7 +162,7 @@ export const HeroStage = ({
             >
               <NavLink to="/insider">
                 <ShieldAlert className="size-4" aria-hidden />
-                Open the pit
+                Open insider watch
               </NavLink>
             </Button>
             {onScan ? (
@@ -181,7 +182,7 @@ export const HeroStage = ({
 
           <div className="mt-2 grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3 [&>*]:min-w-0">
             <StatPill
-              label="Live opps"
+              label="Live signals"
               icon={<TrendingUp className="size-3" aria-hidden />}
               accent={liveOpps > 0 ? "positive" : undefined}
             >
@@ -190,7 +191,7 @@ export const HeroStage = ({
             <StatPill label="Mapped" icon={<BarChart3 className="size-3" aria-hidden />}>
               <CountUp value={mappedMarkets} />
             </StatPill>
-            <StatPill label="Scans" icon={<Activity className="size-3" aria-hidden />}>
+            <StatPill label="Tape scans" icon={<Activity className="size-3" aria-hidden />}>
               <CountUp value={totalScans} />
             </StatPill>
             <StatPill
@@ -220,7 +221,7 @@ export const HeroStage = ({
             <div className="relative mt-4 grid grid-cols-3 gap-2 border-t border-border/50 pt-4 text-center sm:gap-3 [&>*]:min-w-0">
               <div className="min-w-0">
                 <div className="font-display text-[0.6rem] uppercase tracking-[0.22em] text-muted-foreground">
-                  Avg latency
+                  Tape lag
                 </div>
                 <div className="mt-0.5 font-display text-sm font-semibold tabular-nums">
                   <CountUp value={142} suffix="ms" />
@@ -236,7 +237,7 @@ export const HeroStage = ({
               </div>
               <div className="min-w-0">
                 <div className="font-display text-[0.6rem] uppercase tracking-[0.22em] text-muted-foreground">
-                  Cycles
+                  Scans
                 </div>
                 <div className="mt-0.5 font-display text-sm font-semibold tabular-nums">
                   <CountUp value={totalScans} />
@@ -257,7 +258,7 @@ export const HeroStage = ({
             className="font-display text-[0.6rem] uppercase tracking-[0.35em]"
             aria-hidden
           >
-            Enter the pit
+            Follow the flow
           </span>
           <ChevronDown className="size-4 animate-scroll-hint" aria-hidden />
         </div>

@@ -3,16 +3,16 @@ import { Reveal } from "@/components/fx/Reveal"
 import { SectionEyebrow } from "./SectionEyebrow"
 
 const PROS = [
-  "One pit: tape, edge math, and ticket live on the same surface",
-  "Every edge priced in basis points, after slippage and friction",
+  "One watch surface: large prints, market context, and execution links",
+  "Month-long lookback catches slow-building insider flow",
   "Self-hosted, single-file SQLite — your keys, your machine",
-  "Kelly-sized orders with hard notional caps baked in",
+  "Sports and parlay noise filtered before it reaches the feed",
 ]
 
 const CONS = [
-  "Broker clones that hide fills behind five screens",
-  "Dashboard mazes with pretty charts and no P&L",
-  "Vibe-based percentages that evaporate at execution",
+  "Raw tapes that only show the last few frantic hours",
+  "Whale dashboards clogged with sports props and parlays",
+  "Vibe-based alerts with no notional or open-interest context",
   "SaaS vaults holding your account keys on someone else's box",
 ]
 
@@ -26,11 +26,11 @@ export const WhyItLands = () => (
       <Reveal variant="up" className="mx-auto max-w-2xl text-center">
         <SectionEyebrow>Why it lands</SectionEyebrow>
         <h2 className="mt-4 text-balance font-display text-3xl font-bold uppercase tracking-tight md:text-5xl">
-          Built like a <span className="text-gradient-emerald">trading terminal</span> for edges.
+          Built like a <span className="text-gradient-emerald">surveillance terminal</span> for insider flow.
         </h2>
         <p className="mt-3 text-sm text-muted-foreground md:text-base">
           Not a broker clone. Not a dashboard maze. KalshiInsider turns prediction markets into a
-          pit — with a feed, live watch surface, and enough signal to pull the trigger fast.
+          tape room with enough context to decide whether a large print is signal or noise.
         </p>
       </Reveal>
 

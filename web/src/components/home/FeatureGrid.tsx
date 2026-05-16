@@ -19,15 +19,15 @@ type Feature = {
 const FEATURES: Feature[] = [
   {
     icon: Activity,
-    title: "Real-time Kalshi tape",
+    title: "Month-long Kalshi tape",
     body:
-      "Sub-second tape ingest with smart back-off. Aggregates every print into notional, share-of-OI, and tier signals.",
+      "Looks back 30 days by default and aggregates every qualifying print into notional, share-of-OI, and tier signals.",
   },
   {
     icon: GaugeCircle,
-    title: "Edge in basis points",
+    title: "Conviction scoring",
     body:
-      "Every opportunity is priced in bps after slippage and friction. No vibe-based percentages.",
+      "Every market is ranked by size, directional imbalance, open-interest impact, concentration, and recency.",
   },
   {
     icon: ShieldAlert,
@@ -37,9 +37,9 @@ const FEATURES: Feature[] = [
   },
   {
     icon: Bot,
-    title: "Auto-mapping",
+    title: "Market hydration",
     body:
-      "Fuzzy matcher links Kalshi contracts to sportsbook lines automatically — no spreadsheets to maintain.",
+      "Ticker metadata, status, prices, and public Kalshi URLs are resolved before anything reaches the feed.",
   },
   {
     icon: Database,
@@ -61,10 +61,10 @@ export const FeatureGrid = () => (
       <Reveal variant="up" className="mx-auto max-w-2xl text-center">
         <SectionEyebrow>Inside the kit</SectionEyebrow>
         <h2 className="mt-4 text-balance font-display text-3xl font-bold uppercase tracking-tight md:text-5xl">
-          Everything an <span className="text-gradient-emerald">edge-hunter</span> needs, in one tab.
+          Everything an <span className="text-gradient-emerald">tape-reader</span> needs, in one tab.
         </h2>
         <p className="mt-3 text-sm text-muted-foreground md:text-base">
-          Built for traders who want institutional tooling without an institutional stack.
+          Built for traders who want to spot informed flow without digging through raw trade logs.
         </p>
       </Reveal>
 
