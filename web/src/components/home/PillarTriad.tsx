@@ -36,7 +36,7 @@ const PILLARS: Pillar[] = [
 
 export const PillarTriad = () => (
   <section className="relative" aria-label="Why KalshiInsider lands">
-    <div className="mx-auto max-w-6xl px-4 py-16 md:py-20">
+    <div className="mx-auto max-w-6xl px-4 py-20 md:py-24">
       <div className="grid gap-4 md:grid-cols-3">
         {PILLARS.map((pillar, idx) => (
           <Reveal key={pillar.kicker} variant="up" delayMs={idx * 110}>

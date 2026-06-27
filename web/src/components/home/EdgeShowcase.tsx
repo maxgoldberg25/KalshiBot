@@ -90,7 +90,7 @@ export const EdgeShowcase = () => (
           <div className="relative">
             <div
               aria-hidden
-              className="absolute -inset-x-6 -top-12 -z-10 h-44 bg-aurora animate-aurora opacity-70 blur-3xl"
+              className="absolute -inset-x-6 -top-12 -z-10 h-44 rounded-full bg-primary/[0.06] blur-3xl"
             />
             <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-card/70 shadow-2xl shadow-primary/5 backdrop-blur">
               <div className="flex items-center justify-between border-b border-border/60 px-5 py-3">

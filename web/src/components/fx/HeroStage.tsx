@@ -77,19 +77,11 @@ export const HeroStage = ({
   return (
     <section className="relative overflow-hidden border-b border-border/40 bg-gradient-to-b from-card/40 to-background">
       <div
-        className="pointer-events-none bg-grid absolute inset-0 opacity-[0.18] mask-fade-b"
+        className="pointer-events-none bg-grid absolute inset-0 opacity-[0.12] mask-fade-b"
         aria-hidden
       />
       <div
-        className="absolute -left-32 -top-32 size-[520px] rounded-full bg-primary/20 blur-3xl animate-float-slow"
-        aria-hidden
-      />
-      <div
-        className="absolute -right-40 top-20 size-[420px] rounded-full bg-sky-500/15 blur-3xl animate-pulse-glow"
-        aria-hidden
-      />
-      <div
-        className="absolute bottom-[-10rem] left-1/3 size-[360px] rounded-full bg-emerald-500/10 blur-3xl animate-float"
+        className="pointer-events-none absolute -right-32 -top-24 size-[460px] rounded-full bg-primary/10 blur-3xl"
         aria-hidden
       />
 
@@ -118,7 +110,7 @@ export const HeroStage = ({
             <h1 className="font-display text-balance text-5xl font-bold uppercase leading-[1.02] tracking-tight text-foreground sm:text-6xl lg:text-[4.25rem]">
               Track the tape.
               <br />
-              <span className="bg-gradient-to-br from-emerald-300 via-primary to-teal-400 bg-clip-text text-transparent text-glow-emerald animate-glow-pulse">
+              <span className="bg-gradient-to-br from-emerald-300 via-primary to-teal-400 bg-clip-text text-transparent">
                 Catch the insiders.
               </span>
             </h1>
@@ -212,43 +204,13 @@ export const HeroStage = ({
           className="relative z-0 mt-4 min-w-0 animate-fade-up lg:mt-0"
           style={{ animationDelay: "120ms" }}
         >
-          <div className="relative z-10 rounded-2xl border border-border/60 bg-card/70 p-5 shadow-2xl shadow-primary/5 backdrop-blur-md">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/10 via-transparent to-sky-500/10 opacity-60"
-            />
+          <div className="relative z-10 rounded-2xl border border-border/60 bg-card/70 p-5 shadow-xl shadow-primary/5 backdrop-blur-md">
             <LiveEdgeChart liveOpps={liveOpps} />
-            <div className="relative mt-4 grid grid-cols-3 gap-2 border-t border-border/50 pt-4 text-center sm:gap-3 [&>*]:min-w-0">
-              <div className="min-w-0">
-                <div className="font-display text-[0.6rem] uppercase tracking-[0.22em] text-muted-foreground">
-                  Tape lag
-                </div>
-                <div className="mt-0.5 font-display text-sm font-semibold tabular-nums">
-                  <CountUp value={142} suffix="ms" />
-                </div>
-              </div>
-              <div className="min-w-0">
-                <div className="font-display text-[0.6rem] uppercase tracking-[0.22em] text-muted-foreground">
-                  Markets
-                </div>
-                <div className="mt-0.5 font-display text-sm font-semibold tabular-nums">
-                  <CountUp value={mappedMarkets} />
-                </div>
-              </div>
-              <div className="min-w-0">
-                <div className="font-display text-[0.6rem] uppercase tracking-[0.22em] text-muted-foreground">
-                  Scans
-                </div>
-                <div className="mt-0.5 font-display text-sm font-semibold tabular-nums">
-                  <CountUp value={totalScans} />
-                </div>
-              </div>
-            </div>
           </div>
 
           <div
             aria-hidden
-            className="pointer-events-none absolute -inset-3 -z-10 rounded-3xl bg-gradient-to-br from-primary/25 via-transparent to-sky-500/15 blur-2xl animate-pulse-glow lg:-inset-6"
+            className="pointer-events-none absolute -inset-4 -z-10 rounded-3xl bg-primary/10 blur-2xl"
           />
         </div>
 

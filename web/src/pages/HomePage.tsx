@@ -14,7 +14,6 @@ import { HowItWorks } from "@/components/home/HowItWorks"
 import { LeagueMarquee } from "@/components/home/LeagueMarquee"
 import { MetricsBand } from "@/components/home/MetricsBand"
 import { PillarTriad } from "@/components/home/PillarTriad"
-import { ScanTimeline } from "@/components/home/ScanTimeline"
 import { WhyItLands } from "@/components/home/WhyItLands"
 import { useAuth } from "@/context/AuthContext"
 import { fmtTime, fmtUptime } from "@/lib/format"
@@ -58,11 +57,9 @@ export function HomePage() {
     <div className="relative isolate">
       <ScrollProgress />
 
-      {/* Ambient page-wide background */}
+      {/* Ambient page-wide background — single subtle glow, no animation */}
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute inset-0 bg-aurora animate-aurora opacity-60" />
-        <div className="absolute inset-0 bg-noise opacity-[0.03]" />
-        <div className="absolute inset-x-0 bottom-0 h-96 bg-gradient-to-t from-background via-background/80 to-transparent" />
+        <div className="absolute -top-40 left-1/2 h-[460px] w-[860px] -translate-x-1/2 rounded-full bg-primary/[0.07] blur-3xl" />
       </div>
 
       <div className="relative">
@@ -97,7 +94,8 @@ export function HomePage() {
           </Alert>
         )}
 
-        {/* Health + Status */}
+        {/* Health + Status — only relevant to signed-in operators */}
+        {isAuthed && (
         <div className="grid min-w-0 gap-3 lg:grid-cols-5">
           <Card className="min-w-0 lg:col-span-3">
             <CardHeader className="pb-2 pt-4">
@@ -144,7 +142,7 @@ export function HomePage() {
             </CardContent>
           </Card>
 
-          <Card className={cn("min-w-0 lg:col-span-2", !isAuthed && "opacity-60")}>
+          <Card className="min-w-0 lg:col-span-2">
             <CardHeader className="space-y-0 pb-2 pt-4">
               <CardTitle className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1 font-display text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
                 <span className="shrink-0">Scan status</span>
@@ -184,6 +182,7 @@ export function HomePage() {
             </CardContent>
           </Card>
         </div>
+        )}
 
         {/* Active sports */}
         {isAuthed && !loading && !!d?.sports?.length && (
@@ -230,10 +229,9 @@ export function HomePage() {
       <PillarTriad />
       <HowItWorks />
       <EdgeShowcase />
+      <FeatureGrid />
       <MetricsBand />
       <WhyItLands />
-      <FeatureGrid />
-      <ScanTimeline />
 
       <CtaBand />
     </div>

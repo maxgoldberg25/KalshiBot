@@ -1,10 +1,11 @@
 import { useEffect } from "react"
 import { HashRouter, NavLink, Navigate, Route, Routes } from "react-router-dom"
-import { Home, ShieldAlert, ShieldCheck, TrendingUp } from "lucide-react"
+import { Home, Radar, ShieldAlert, ShieldCheck, TrendingUp } from "lucide-react"
 import { AdminPage } from "@/pages/AdminPage"
 import { HomePage } from "@/pages/HomePage"
 import { InsiderWatchPage } from "@/pages/InsiderWatchPage"
 import { LoginPage } from "@/pages/LoginPage"
+import { ScannerPage } from "@/pages/ScannerPage"
 import { RequireAdmin } from "@/components/auth/RequireAdmin"
 import { RequireAuth } from "@/components/auth/RequireAuth"
 import { UserMenu } from "@/components/auth/UserMenu"
@@ -60,6 +61,12 @@ const AppShell = () => {
                 Insider watch
               </NavLink>
             )}
+            {isAuthed && (
+              <NavLink to="/scanner" className={navLinkClass}>
+                <Radar className="size-3.5" aria-hidden />
+                Scanner
+              </NavLink>
+            )}
             {isAuthed && isAdmin && (
               <NavLink to="/admin" className={navLinkClass}>
                 <ShieldCheck className="size-3.5" aria-hidden />
@@ -83,6 +90,14 @@ const AppShell = () => {
             element={
               <RequireAuth>
                 <InsiderWatchPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/scanner"
+            element={
+              <RequireAuth>
+                <ScannerPage />
               </RequireAuth>
             }
           />

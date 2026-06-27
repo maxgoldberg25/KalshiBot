@@ -18,17 +18,8 @@ const METRICS: Metric[] = [
 ]
 
 export const MetricsBand = () => (
-  <section className="relative">
-    <div
-      aria-hidden
-      className="absolute inset-0 -z-10 bg-aurora animate-aurora opacity-50"
-    />
-    <div
-      aria-hidden
-      className="absolute inset-0 -z-10 bg-noise opacity-[0.04]"
-    />
-
-    <div className="mx-auto max-w-6xl px-4 py-24">
+  <section className="relative border-y border-border/50 bg-card/20">
+    <div className="mx-auto max-w-6xl px-4 py-20 md:py-24">
       <Reveal variant="up" className="mx-auto max-w-2xl text-center">
         <SectionEyebrow>The month-long tape</SectionEyebrow>
         <h2 className="mt-4 text-balance font-display text-3xl font-bold uppercase tracking-tight md:text-5xl">
